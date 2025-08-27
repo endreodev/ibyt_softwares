@@ -365,12 +365,15 @@ async function handleAppFormSubmit(event) {
         submitBtn.innerHTML = '<span class="material-icons-round">hourglass_empty</span> Salvando...';
         
         // Simulate API call
-        const response = await fetch('api/save-app.php', {
+    const response = await fetch('api/save-app.php', {
             method: 'POST',
             body: formData
         });
-        
-        if (response.ok) {
+    // Try to read JSON response
+    let data = null;
+    try { data = await response.json(); } catch (_) {}
+
+    if (response.ok && data && data.success) {
             showAdminNotification(
                 editingAppId ? 'Aplicativo atualizado com sucesso!' : 'Aplicativo criado com sucesso!',
                 'success'
@@ -387,7 +390,8 @@ async function handleAppFormSubmit(event) {
             renderAdminApps();
             updateStats();
         } else {
-            throw new Error('Erro ao salvar aplicativo');
+            const msg = (data && data.message) ? data.message : 'Erro ao salvar aplicativo';
+            throw new Error(msg);
         }
         
         // Restore button
@@ -491,11 +495,11 @@ async function confirmDelete() {
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ _method: 'DELETE', id: appId })
         });
-        
-        if (response.ok) {
-            // Optional: read JSON for message
-            let data = {};
-            try { data = await response.json(); } catch (_) {}
+        // Optional: read JSON for message
+        let data = null;
+        try { data = await response.json(); } catch (_) {}
+
+        if (response.ok && data && data.success) {
             // Remove from local data
             adminApps = adminApps.filter(a => a.id !== appId);
             filteredAdminApps = filteredAdminApps.filter(a => a.id !== appId);
@@ -503,9 +507,10 @@ async function confirmDelete() {
             renderAdminApps();
             updateStats();
             closeDeleteModal();
-            showAdminNotification((data.message || 'Aplicativo excluído com sucesso!'), 'success');
+            showAdminNotification(((data && data.message) || 'Aplicativo excluído com sucesso!'), 'success');
         } else {
-            throw new Error('Erro ao excluir aplicativo');
+            const msg = (data && data.message) ? data.message : 'Erro ao excluir aplicativo';
+            throw new Error(msg);
         }
     } catch (error) {
         console.error('Error deleting app:', error);
