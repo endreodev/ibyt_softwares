@@ -1,0 +1,746 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gestão de Reservatórios - ERP Água</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.2/font/bootstrap-icons.css" rel="stylesheet">
+    <style>
+        .status-critico { color: #dc3545; font-weight: bold; }
+        .status-baixo { color: #fd7e14; font-weight: bold; }
+        .status-normal { color: #198754; font-weight: bold; }
+        .status-alto { color: #0d6efd; font-weight: bold; }
+        .status-sem-dados { color: #6c757d; font-style: italic; }
+        .card-reservoir { transition: transform 0.2s; }
+        .card-reservoir:hover { transform: translateY(-2px); }
+    </style>
+</head>
+<body class="bg-light">
+    <div class="container-fluid">
+        <div class="row">
+            <!-- Sidebar -->
+            <nav class="col-md-3 col-lg-2 d-md-block bg-dark sidebar collapse" style="min-height: 100vh;">
+                <div class="position-sticky pt-3">
+                    <h5 class="text-white text-center mb-4">💧 ERP Água</h5>
+                    <ul class="nav flex-column">
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="admin.html">
+                                <i class="bi bi-speedometer2"></i> Dashboard
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="clientes.html">
+                                <i class="bi bi-people"></i> Clientes
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="dispositivos.html">
+                                <i class="bi bi-cpu"></i> Dispositivos
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white active" href="gestao_reservatorios.html">
+                                <i class="bi bi-droplet-fill"></i> Reservatórios
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="vincular_dispositivos.html">
+                                <i class="bi bi-link-45deg"></i> Vincular Dispositivos
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="medicoes.html">
+                                <i class="bi bi-graph-up"></i> Medições
+                            </a>
+                        </li>
+                        <li class="nav-item">
+                            <a class="nav-link text-white" href="teste_medicao.html">
+                                <i class="bi bi-flask"></i> Teste IoT
+                            </a>
+                        </li>
+                    </ul>
+                </div>
+            </nav>
+
+            <!-- Main content -->
+            <main class="col-md-9 ms-sm-auto col-lg-10 px-md-4">
+                <!-- Header -->
+                <div class="d-flex justify-content-between flex-wrap flex-md-nowrap align-items-center pt-3 pb-2 mb-3 border-bottom">
+                    <h1 class="h2">
+                        <i class="bi bi-droplet-fill text-primary"></i> 
+                        Gestão de Reservatórios
+                    </h1>
+                    <div class="d-flex align-items-center">
+                        <span class="me-3" id="userInfo">Carregando...</span>
+                        <button class="btn btn-outline-danger btn-sm" onclick="logout()">
+                            <i class="bi bi-box-arrow-right"></i> Sair
+                        </button>
+                    </div>
+                </div>
+
+                <!-- Alertas -->
+                <div id="alerts"></div>
+
+                <!-- Actions Bar -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <button class="btn btn-primary" onclick="mostrarModalNovoReservatorio()">
+                            <i class="bi bi-plus-circle"></i> Novo Reservatório
+                        </button>
+                        <button class="btn btn-outline-secondary ms-2" onclick="carregarReservatorios()">
+                            <i class="bi bi-arrow-clockwise"></i> Atualizar
+                        </button>
+                    </div>
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <select class="form-select" id="filtroCliente" onchange="aplicarFiltros()">
+                                <option value="">Todos os Clientes</option>
+                            </select>
+                            <input type="text" class="form-control" id="filtroNome" placeholder="Buscar reservatório..." onkeyup="aplicarFiltros()">
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Status Cards -->
+                <div class="row mb-4" id="statusCards">
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title text-muted">Total</h5>
+                                <h2 class="text-primary" id="totalReservatorios">-</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title text-success">Normal</h5>
+                                <h2 class="text-success" id="normalReservatorios">-</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title text-warning">Baixo</h5>
+                                <h2 class="text-warning" id="baixoReservatorios">-</h2>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="card text-center">
+                            <div class="card-body">
+                                <h5 class="card-title text-danger">Crítico</h5>
+                                <h2 class="text-danger" id="criticoReservatorios">-</h2>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Reservatórios Grid -->
+                <div class="row" id="reservatoriosGrid">
+                    <div class="col-12 text-center">
+                        <div class="spinner-border" role="status">
+                            <span class="visually-hidden">Carregando...</span>
+                        </div>
+                    </div>
+                </div>
+            </main>
+        </div>
+    </div>
+
+    <!-- Modal Novo/Editar Reservatório -->
+    <div class="modal fade" id="modalReservatorio" tabindex="-1">
+        <div class="modal-dialog modal-lg">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title" id="modalReservatorioTitle">Novo Reservatório</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <form id="formReservatorio">
+                        <input type="hidden" id="reservatorioId">
+                        
+                        <div class="row">
+                            <div class="col-md-6">
+                                <label for="reservatorioNome" class="form-label">Nome do Reservatório *</label>
+                                <input type="text" class="form-control" id="reservatorioNome" required>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="reservatorioCliente" class="form-label">Cliente</label>
+                                <select class="form-select" id="reservatorioCliente">
+                                    <option value="">Selecione um cliente</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-3">
+                            <div class="col-md-4">
+                                <label for="reservatorioCapacidade" class="form-label">Capacidade (Litros)</label>
+                                <input type="number" class="form-control" id="reservatorioCapacidade" step="0.01" min="0">
+                            </div>
+                            <div class="col-md-4">
+                                <label for="reservatorioAlturaTotal" class="form-label">Altura Total (cm) *</label>
+                                <input type="number" class="form-control" id="reservatorioAlturaTotal" step="0.01" min="0" required>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="reservatorioTipo" class="form-label">Tipo</label>
+                                <select class="form-select" id="reservatorioTipo">
+                                    <option value="cilindrico">Cilíndrico</option>
+                                    <option value="retangular">Retangular</option>
+                                    <option value="outro">Outro</option>
+                                </select>
+                            </div>
+                        </div>
+                        
+                        <div class="row mt-3">
+                            <div class="col-md-6">
+                                <label for="reservatorioAlturaMinima" class="form-label">Nível Mínimo (cm)</label>
+                                <input type="number" class="form-control" id="reservatorioAlturaMinima" step="0.01" min="0" value="10">
+                                <small class="form-text text-muted">Nível de alerta baixo</small>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="reservatorioAlturaMaxima" class="form-label">Nível Máximo (cm)</label>
+                                <input type="number" class="form-control" id="reservatorioAlturaMaxima" step="0.01" min="0">
+                                <small class="form-text text-muted">Deixe vazio para usar 95% da altura total</small>
+                            </div>
+                        </div>
+                        
+                        <div class="mt-3">
+                            <label for="reservatorioLocalizacao" class="form-label">Localização</label>
+                            <input type="text" class="form-control" id="reservatorioLocalizacao" placeholder="Ex: Área Central, Galpão Norte...">
+                        </div>
+                        
+                        <div class="mt-3">
+                            <label for="reservatorioDescricao" class="form-label">Descrição</label>
+                            <textarea class="form-control" id="reservatorioDescricao" rows="3" placeholder="Descrição detalhada do reservatório..."></textarea>
+                        </div>
+                    </form>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-primary" onclick="salvarReservatorio()">Salvar</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Vincular Dispositivo -->
+    <div class="modal fade" id="modalVincularDispositivo" tabindex="-1">
+        <div class="modal-dialog">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h5 class="modal-title">Vincular Dispositivo</h5>
+                    <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+                </div>
+                <div class="modal-body">
+                    <input type="hidden" id="vincularReservatorioId">
+                    <div class="mb-3">
+                        <label for="dispositivoSelect" class="form-label">Selecione o Dispositivo</label>
+                        <select class="form-select" id="dispositivoSelect">
+                            <option value="">Carregando dispositivos...</option>
+                        </select>
+                    </div>
+                    <div class="alert alert-info">
+                        <i class="bi bi-info-circle"></i> 
+                        Apenas dispositivos não vinculados aparecem na lista.
+                    </div>
+                </div>
+                <div class="modal-footer">
+                    <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancelar</button>
+                    <button type="button" class="btn btn-success" onclick="confirmarVinculacao()">Vincular</button>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        // Variáveis globais
+        let reservatorios = [];
+        let clientes = [];
+        let dispositivosDisponiveis = [];
+
+        // Inicialização
+        document.addEventListener('DOMContentLoaded', function() {
+            checkAuth();
+            carregarDados();
+        });
+
+        // Verificar autenticação
+        function checkAuth() {
+            const user = localStorage.getItem('user');
+            if (!user) {
+                window.location.href = 'index.html';
+                return;
+            }
+            
+            const userData = JSON.parse(user);
+            document.getElementById('userInfo').textContent = userData.nome;
+        }
+
+        // Logout
+        function logout() {
+            localStorage.removeItem('user');
+            window.location.href = 'index.html';
+        }
+
+        // Carregar todos os dados
+        async function carregarDados() {
+            await Promise.all([
+                carregarReservatorios(),
+                carregarClientes()
+            ]);
+        }
+
+        // Carregar reservatórios
+        async function carregarReservatorios() {
+            try {
+                const response = await fetch('api/reservatorios_completo.php?action=listar');
+                const data = await response.json();
+                
+                if (data.success) {
+                    reservatorios = data.data;
+                    renderizarReservatorios();
+                    atualizarStatusCards();
+                } else {
+                    throw new Error(data.message);
+                }
+            } catch (error) {
+                console.error('Erro ao carregar reservatórios:', error);
+                mostrarAlerta('Erro ao carregar reservatórios: ' + error.message, 'danger');
+            }
+        }
+
+        // Carregar clientes
+        async function carregarClientes() {
+            try {
+                const response = await fetch('api/reservatorios_completo.php?action=clientes');
+                const data = await response.json();
+                
+                if (data.success) {
+                    clientes = data.data;
+                    popularSelectClientes();
+                } else {
+                    throw new Error(data.message);
+                }
+            } catch (error) {
+                console.error('Erro ao carregar clientes:', error);
+            }
+        }
+
+        // Popular select de clientes
+        function popularSelectClientes() {
+            const filtroCliente = document.getElementById('filtroCliente');
+            const reservatorioCliente = document.getElementById('reservatorioCliente');
+            
+            // Limpar opções existentes (exceto primeira)
+            filtroCliente.innerHTML = '<option value="">Todos os Clientes</option>';
+            reservatorioCliente.innerHTML = '<option value="">Selecione um cliente</option>';
+            
+            clientes.forEach(cliente => {
+                const optionFiltro = document.createElement('option');
+                optionFiltro.value = cliente.id;
+                optionFiltro.textContent = cliente.nome_fantasia;
+                filtroCliente.appendChild(optionFiltro);
+
+                const optionReservatorio = document.createElement('option');
+                optionReservatorio.value = cliente.id;
+                optionReservatorio.textContent = cliente.nome_fantasia;
+                reservatorioCliente.appendChild(optionReservatorio);
+            });
+        }
+
+        // Renderizar reservatórios
+        function renderizarReservatorios() {
+            const grid = document.getElementById('reservatoriosGrid');
+            
+            if (reservatorios.length === 0) {
+                grid.innerHTML = `
+                    <div class="col-12 text-center">
+                        <div class="alert alert-info">
+                            <i class="bi bi-info-circle"></i> 
+                            Nenhum reservatório encontrado. Clique em "Novo Reservatório" para começar.
+                        </div>
+                    </div>
+                `;
+                return;
+            }
+
+            let html = '';
+            reservatorios.forEach(reservatorio => {
+                const statusClass = getStatusClass(reservatorio.status_nivel);
+                const statusIcon = getStatusIcon(reservatorio.status_nivel);
+                const ultimaMedicao = reservatorio.ultima_medicao ? 
+                    new Date(reservatorio.ultima_medicao).toLocaleString('pt-BR') : 'Nunca';
+                
+                html += `
+                    <div class="col-lg-4 col-md-6 mb-4">
+                        <div class="card card-reservoir h-100">
+                            <div class="card-header d-flex justify-content-between align-items-center">
+                                <h6 class="mb-0">${reservatorio.nome}</h6>
+                                <span class="badge bg-secondary">${reservatorio.tipo}</span>
+                            </div>
+                            <div class="card-body">
+                                <div class="row">
+                                    <div class="col-6">
+                                        <small class="text-muted">Cliente:</small><br>
+                                        <strong>${reservatorio.cliente_nome || 'Não definido'}</strong>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted">Status:</small><br>
+                                        <span class="${statusClass}">
+                                            ${statusIcon} ${reservatorio.status_nivel || 'SEM_DADOS'}
+                                        </span>
+                                    </div>
+                                </div>
+                                
+                                <hr>
+                                
+                                <div class="row">
+                                    <div class="col-6">
+                                        <small class="text-muted">Nível Atual:</small><br>
+                                        <strong>${reservatorio.nivel_atual ? reservatorio.nivel_atual + ' cm' : 'N/A'}</strong>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted">Percentual:</small><br>
+                                        <strong>${reservatorio.percentual_atual ? reservatorio.percentual_atual + '%' : 'N/A'}</strong>
+                                    </div>
+                                </div>
+                                
+                                <div class="row mt-2">
+                                    <div class="col-6">
+                                        <small class="text-muted">Capacidade:</small><br>
+                                        <strong>${reservatorio.capacidade ? reservatorio.capacidade + 'L' : 'N/A'}</strong>
+                                    </div>
+                                    <div class="col-6">
+                                        <small class="text-muted">Altura Total:</small><br>
+                                        <strong>${reservatorio.altura_total}cm</strong>
+                                    </div>
+                                </div>
+                                
+                                <div class="mt-2">
+                                    <small class="text-muted">Dispositivo:</small><br>
+                                    ${reservatorio.dispositivo_id ? 
+                                        `<span class="badge bg-success">ID: ${reservatorio.dispositivo_id}</span>` :
+                                        `<span class="badge bg-warning">Não vinculado</span>`
+                                    }
+                                </div>
+                                
+                                <div class="mt-2">
+                                    <small class="text-muted">Última Medição:</small><br>
+                                    <small>${ultimaMedicao}</small>
+                                </div>
+                            </div>
+                            <div class="card-footer">
+                                <div class="btn-group w-100" role="group">
+                                    <button class="btn btn-outline-primary btn-sm" onclick="editarReservatorio(${reservatorio.id})">
+                                        <i class="bi bi-pencil"></i>
+                                    </button>
+                                    ${!reservatorio.dispositivo_id ? 
+                                        `<button class="btn btn-outline-success btn-sm" onclick="mostrarModalVincularDispositivo(${reservatorio.id})">
+                                            <i class="bi bi-link"></i>
+                                        </button>` :
+                                        `<button class="btn btn-outline-warning btn-sm" onclick="desvincularDispositivo(${reservatorio.id})">
+                                            <i class="bi bi-unlink"></i>
+                                        </button>`
+                                    }
+                                    <button class="btn btn-outline-danger btn-sm" onclick="removerReservatorio(${reservatorio.id})">
+                                        <i class="bi bi-trash"></i>
+                                    </button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+            });
+            
+            grid.innerHTML = html;
+        }
+
+        // Atualizar cards de status
+        function atualizarStatusCards() {
+            const total = reservatorios.length;
+            const normal = reservatorios.filter(r => r.status_nivel === 'NORMAL').length;
+            const baixo = reservatorios.filter(r => r.status_nivel === 'BAIXO').length;
+            const critico = reservatorios.filter(r => r.status_nivel === 'CRITICO').length;
+            
+            document.getElementById('totalReservatorios').textContent = total;
+            document.getElementById('normalReservatorios').textContent = normal;
+            document.getElementById('baixoReservatorios').textContent = baixo;
+            document.getElementById('criticoReservatorios').textContent = critico;
+        }
+
+        // Funções auxiliares para status
+        function getStatusClass(status) {
+            switch(status) {
+                case 'CRITICO': return 'status-critico';
+                case 'BAIXO': return 'status-baixo';
+                case 'NORMAL': return 'status-normal';
+                case 'ALTO': return 'status-alto';
+                default: return 'status-sem-dados';
+            }
+        }
+
+        function getStatusIcon(status) {
+            switch(status) {
+                case 'CRITICO': return '🚨';
+                case 'BAIXO': return '⚠️';
+                case 'NORMAL': return '✅';
+                case 'ALTO': return '🔵';
+                default: return '❓';
+            }
+        }
+
+        // Mostrar modal novo reservatório
+        function mostrarModalNovoReservatorio() {
+            document.getElementById('modalReservatorioTitle').textContent = 'Novo Reservatório';
+            document.getElementById('formReservatorio').reset();
+            document.getElementById('reservatorioId').value = '';
+            
+            const modal = new bootstrap.Modal(document.getElementById('modalReservatorio'));
+            modal.show();
+        }
+
+        // Editar reservatório
+        function editarReservatorio(id) {
+            const reservatorio = reservatorios.find(r => r.id == id);
+            if (!reservatorio) return;
+            
+            document.getElementById('modalReservatorioTitle').textContent = 'Editar Reservatório';
+            document.getElementById('reservatorioId').value = reservatorio.id;
+            document.getElementById('reservatorioNome').value = reservatorio.nome;
+            document.getElementById('reservatorioCliente').value = reservatorio.cliente_id || '';
+            document.getElementById('reservatorioCapacidade').value = reservatorio.capacidade || '';
+            document.getElementById('reservatorioAlturaTotal').value = reservatorio.altura_total;
+            document.getElementById('reservatorioAlturaMinima').value = reservatorio.altura_minima;
+            document.getElementById('reservatorioAlturaMaxima').value = reservatorio.altura_maxima || '';
+            document.getElementById('reservatorioTipo').value = reservatorio.tipo;
+            document.getElementById('reservatorioLocalizacao').value = reservatorio.localizacao || '';
+            document.getElementById('reservatorioDescricao').value = reservatorio.descricao || '';
+            
+            const modal = new bootstrap.Modal(document.getElementById('modalReservatorio'));
+            modal.show();
+        }
+
+        // Salvar reservatório
+        async function salvarReservatorio() {
+            try {
+                const id = document.getElementById('reservatorioId').value;
+                const data = {
+                    nome: document.getElementById('reservatorioNome').value,
+                    cliente_id: document.getElementById('reservatorioCliente').value || null,
+                    capacidade: document.getElementById('reservatorioCapacidade').value || null,
+                    altura_total: document.getElementById('reservatorioAlturaTotal').value,
+                    altura_minima: document.getElementById('reservatorioAlturaMinima').value,
+                    altura_maxima: document.getElementById('reservatorioAlturaMaxima').value || null,
+                    tipo: document.getElementById('reservatorioTipo').value,
+                    localizacao: document.getElementById('reservatorioLocalizacao').value || null,
+                    descricao: document.getElementById('reservatorioDescricao').value || null
+                };
+
+                let url, method;
+                if (id) {
+                    // Editar
+                    data.id = id;
+                    url = 'api/reservatorios_completo.php';
+                    method = 'PUT';
+                } else {
+                    // Criar
+                    data.action = 'criar';
+                    url = 'api/reservatorios_completo.php';
+                    method = 'POST';
+                }
+
+                const response = await fetch(url, {
+                    method: method,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(data)
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    mostrarAlerta(result.message, 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('modalReservatorio')).hide();
+                    carregarReservatorios();
+                } else {
+                    throw new Error(result.message);
+                }
+            } catch (error) {
+                console.error('Erro ao salvar reservatório:', error);
+                mostrarAlerta('Erro ao salvar: ' + error.message, 'danger');
+            }
+        }
+
+        // Remover reservatório
+        async function removerReservatorio(id) {
+            const reservatorio = reservatorios.find(r => r.id == id);
+            if (!confirm(`Tem certeza que deseja remover o reservatório "${reservatorio.nome}"?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch(`api/reservatorios_completo.php?id=${id}`, {
+                    method: 'DELETE'
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    mostrarAlerta(result.message, 'success');
+                    carregarReservatorios();
+                } else {
+                    throw new Error(result.message);
+                }
+            } catch (error) {
+                console.error('Erro ao remover reservatório:', error);
+                mostrarAlerta('Erro ao remover: ' + error.message, 'danger');
+            }
+        }
+
+        // Mostrar modal vincular dispositivo
+        async function mostrarModalVincularDispositivo(reservatorioId) {
+            document.getElementById('vincularReservatorioId').value = reservatorioId;
+            
+            // Carregar dispositivos disponíveis
+            await carregarDispositivosDisponiveis();
+            
+            const modal = new bootstrap.Modal(document.getElementById('modalVincularDispositivo'));
+            modal.show();
+        }
+
+        // Carregar dispositivos disponíveis
+        async function carregarDispositivosDisponiveis() {
+            try {
+                const response = await fetch('api/reservatorios_completo.php?action=dispositivos_disponiveis');
+                const data = await response.json();
+                
+                const select = document.getElementById('dispositivoSelect');
+                select.innerHTML = '<option value="">Selecione um dispositivo</option>';
+                
+                if (data.success && data.data.length > 0) {
+                    data.data.forEach(dispositivo => {
+                        const option = document.createElement('option');
+                        option.value = dispositivo.id;
+                        option.textContent = `ID: ${dispositivo.id} - ${dispositivo.identificador || 'Sem identificador'}`;
+                        select.appendChild(option);
+                    });
+                } else {
+                    select.innerHTML = '<option value="">Nenhum dispositivo disponível</option>';
+                }
+            } catch (error) {
+                console.error('Erro ao carregar dispositivos:', error);
+            }
+        }
+
+        // Confirmar vinculação
+        async function confirmarVinculacao() {
+            try {
+                const reservatorioId = document.getElementById('vincularReservatorioId').value;
+                const dispositivoId = document.getElementById('dispositivoSelect').value;
+                
+                if (!dispositivoId) {
+                    alert('Selecione um dispositivo');
+                    return;
+                }
+
+                const response = await fetch('api/reservatorios_completo.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'vincular_dispositivo',
+                        reservatorio_id: reservatorioId,
+                        dispositivo_id: dispositivoId
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    mostrarAlerta(result.message, 'success');
+                    bootstrap.Modal.getInstance(document.getElementById('modalVincularDispositivo')).hide();
+                    carregarReservatorios();
+                } else {
+                    throw new Error(result.message);
+                }
+            } catch (error) {
+                console.error('Erro ao vincular dispositivo:', error);
+                mostrarAlerta('Erro ao vincular: ' + error.message, 'danger');
+            }
+        }
+
+        // Desvincular dispositivo
+        async function desvincularDispositivo(reservatorioId) {
+            const reservatorio = reservatorios.find(r => r.id == reservatorioId);
+            if (!confirm(`Tem certeza que deseja desvincular o dispositivo do reservatório "${reservatorio.nome}"?`)) {
+                return;
+            }
+
+            try {
+                const response = await fetch('api/reservatorios_completo.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'desvincular_dispositivo',
+                        reservatorio_id: reservatorioId
+                    })
+                });
+
+                const result = await response.json();
+                
+                if (result.success) {
+                    mostrarAlerta(result.message, 'success');
+                    carregarReservatorios();
+                } else {
+                    throw new Error(result.message);
+                }
+            } catch (error) {
+                console.error('Erro ao desvincular dispositivo:', error);
+                mostrarAlerta('Erro ao desvincular: ' + error.message, 'danger');
+            }
+        }
+
+        // Aplicar filtros
+        function aplicarFiltros() {
+            const clienteFiltro = document.getElementById('filtroCliente').value;
+            const nomeFiltro = document.getElementById('filtroNome').value.toLowerCase();
+            
+            // Implementar filtros aqui se necessário
+            // Por simplicidade, recarregar dados
+            carregarReservatorios();
+        }
+
+        // Mostrar alerta
+        function mostrarAlerta(mensagem, tipo) {
+            const alertsContainer = document.getElementById('alerts');
+            const alertId = 'alert_' + Date.now();
+            
+            const alertHtml = `
+                <div class="alert alert-${tipo} alert-dismissible fade show" role="alert" id="${alertId}">
+                    ${mensagem}
+                    <button type="button" class="btn-close" data-bs-dismiss="alert"></button>
+                </div>
+            `;
+            
+            alertsContainer.innerHTML = alertHtml;
+            
+            // Auto-remover após 5 segundos
+            setTimeout(() => {
+                const alert = document.getElementById(alertId);
+                if (alert) {
+                    alert.remove();
+                }
+            }, 5000);
+        }
+    </script>
+</body>
+</html>

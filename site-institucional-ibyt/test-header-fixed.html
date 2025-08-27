@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste Header Fixo</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        .professional-header {
+            position: fixed !important;
+            top: 0 !important;
+            left: 0 !important;
+            right: 0 !important;
+            width: 100% !important;
+            height: 80px !important;
+            background: rgba(255, 255, 255, 0.95) !important;
+            backdrop-filter: blur(20px) !important;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.1) !important;
+            z-index: 9999 !important;
+            display: flex !important;
+            align-items: center !important;
+            padding: 0 20px !important;
+        }
+        
+        body {
+            padding-top: 80px !important;
+            font-family: Arial, sans-serif;
+        }
+        
+        .content {
+            height: 200vh;
+            background: linear-gradient(45deg, #f0f0f0, #e0e0e0);
+            padding: 20px;
+        }
+        
+        .section {
+            height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 2rem;
+            margin-bottom: 20px;
+        }
+        
+        .logo {
+            font-weight: bold;
+            color: #1e3a8a;
+        }
+        
+        .nav {
+            margin-left: auto;
+            display: flex;
+            gap: 20px;
+        }
+        
+        .nav a {
+            text-decoration: none;
+            color: #333;
+            padding: 10px 15px;
+            border-radius: 5px;
+        }
+        
+        .nav a:hover {
+            background: rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body>
+    <header class="professional-header">
+        <div class="logo">IBYT Software</div>
+        <nav class="nav">
+            <a href="#home">Início</a>
+            <a href="#about">Sobre</a>
+            <a href="#services">Serviços</a>
+            <a href="#contact">Contato</a>
+        </nav>
+    </header>
+    
+    <div class="content">
+        <div class="section" style="background: #ff6b6b;">
+            <h2>Seção 1 - Role para baixo para testar o header fixo</h2>
+        </div>
+        <div class="section" style="background: #4ecdc4;">
+            <h2>Seção 2 - O header deve permanecer fixo no topo</h2>
+        </div>
+        <div class="section" style="background: #45b7d1;">
+            <h2>Seção 3 - Continue scrollando...</h2>
+        </div>
+        <div class="section" style="background: #f9ca24;">
+            <h2>Seção 4 - Header ainda fixo?</h2>
+        </div>
+    </div>
+    
+    <script>
+        window.addEventListener('scroll', () => {
+            console.log('Scroll position:', window.scrollY);
+            console.log('Header position:', getComputedStyle(document.querySelector('.professional-header')).position);
+        });
+    </script>
+</body>
+</html>

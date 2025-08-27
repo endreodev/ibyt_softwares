@@ -1,0 +1,22 @@
+{
+    "name": "ibyt/water-level-erp",
+    "description": "Mini ERP para gestão de medição de nível de água",
+    "type": "project",
+    "require": {
+        "php": ">=7.4",
+        "coffeecode/datalayer": "^1.1"
+    },
+    "autoload": {
+        "psr-4": {
+            "Model\\": "model/"
+        }
+    },
+    "scripts": {
+        "post-install-cmd": [
+            "@auto-scripts"
+        ],
+        "auto-scripts": {
+            
+        }
+    }
+}

@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Dashboard - IBYT Water</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .debug { background: #f8f9fa; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .error { background: #f8d7da; color: #721c24; }
+        .success { background: #d4edda; color: #155724; }
+        .loading { background: #fff3cd; color: #856404; }
+    </style>
+</head>
+<body>
+    <h1>Debug Dashboard - IBYT Water</h1>
+    
+    <div id="debug-log"></div>
+    
+    <button onclick="testAuth()">Testar Autenticação</button>
+    <button onclick="testDashboard()">Testar Dashboard API</button>
+    <button onclick="clearLog()">Limpar Log</button>
+
+    <script>
+        const API_BASE = 'api/';
+        
+        function log(message, type = 'debug') {
+            const logDiv = document.getElementById('debug-log');
+            const entry = document.createElement('div');
+            entry.className = `debug ${type}`;
+            entry.innerHTML = `<strong>${new Date().toLocaleTimeString()}:</strong> ${message}`;
+            logDiv.appendChild(entry);
+        }
+        
+        function clearLog() {
+            document.getElementById('debug-log').innerHTML = '';
+        }
+        
+        // Verificar autenticação
+        function checkAuth() {
+            const token = localStorage.getItem('auth_token');
+            log(`Token encontrado: ${token ? 'SIM' : 'NÃO'} - Valor: ${token}`);
+            
+            if (!token || token === 'no_auth') {
+                log('Token inválido - redirecionando para login', 'error');
+                return false;
+            }
+            log('Token válido', 'success');
+            return true;
+        }
+        
+        async function testAuth() {
+            log('Iniciando teste de autenticação...');
+            
+            try {
+                const token = localStorage.getItem('auth_token');
+                log(`Token: ${token}`);
+                
+                const response = await fetch(API_BASE + 'autenticacao.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'verify',
+                        token: token
+                    })
+                });
+                
+                log(`Response status: ${response.status}`);
+                
+                const data = await response.json();
+                log(`Response data: ${JSON.stringify(data)}`);
+                
+                if (data.success) {
+                    log('Autenticação válida!', 'success');
+                } else {
+                    log(`Erro de autenticação: ${data.message}`, 'error');
+                }
+                
+            } catch (error) {
+                log(`Erro na requisição: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testDashboard() {
+            log('Iniciando teste do dashboard...');
+            
+            try {
+                const response = await fetch(API_BASE + 'dashboard_simples.php?action=admin');
+                log(`Response status: ${response.status}`);
+                
+                const data = await response.json();
+                log(`Response data: ${JSON.stringify(data, null, 2)}`);
+                
+                if (data.success) {
+                    log('Dashboard carregado com sucesso!', 'success');
+                } else {
+                    log(`Erro no dashboard: ${data.message}`, 'error');
+                }
+                
+            } catch (error) {
+                log(`Erro na requisição do dashboard: ${error.message}`, 'error');
+            }
+        }
+        
+        // Inicialização
+        window.onload = function() {
+            log('Página carregada');
+            checkAuth();
+        };
+    </script>
+</body>
+</html>

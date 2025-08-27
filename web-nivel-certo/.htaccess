@@ -1,0 +1,32 @@
+# Configuração básica para o projeto ERP
+DirectoryIndex login.html admin.html
+Options -Indexes
+
+# Permitir acesso direto a arquivos PHP (APIs)
+RewriteEngine On
+RewriteCond %{REQUEST_FILENAME} -f
+RewriteRule ^.*$ - [L]
+
+# Configurações de segurança
+<Files "composer.json">
+    Require all denied
+</Files>
+
+<Files "composer.lock">
+    Require all denied
+</Files>
+
+<Files "*.md">
+    Require all denied
+</Files>
+
+<Directory "vendor">
+    Require all denied
+</Directory>
+
+# Headers de segurança
+<IfModule mod_headers.c>
+    Header always set X-Content-Type-Options nosniff
+    Header always set X-Frame-Options DENY
+    Header always set X-XSS-Protection "1; mode=block"
+</IfModule>

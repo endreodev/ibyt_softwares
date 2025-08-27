@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔧 Diagnóstico Completo - IBYT Water</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f8f9fa; }
+        .container { max-width: 1200px; margin: 0 auto; }
+        .section { background: white; padding: 20px; margin: 20px 0; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1); }
+        .success { color: #28a745; }
+        .error { color: #dc3545; }
+        .warning { color: #ffc107; }
+        .info { color: #17a2b8; }
+        .test-item { padding: 10px; margin: 5px 0; border-left: 4px solid #ddd; }
+        .test-item.success { border-left-color: #28a745; background: #f8fff9; }
+        .test-item.error { border-left-color: #dc3545; background: #fff8f8; }
+        .test-item.warning { border-left-color: #ffc107; background: #fffdf7; }
+        .btn { padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin: 5px; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Diagnóstico Completo do Sistema IBYT Water</h1>
+        
+        <div class="section">
+            <h2>🗄️ Verificação do Banco de Dados</h2>
+            <div id="database-results"></div>
+            <button class="btn btn-primary" onclick="testDatabase()">Testar Conexão</button>
+            <button class="btn btn-success" onclick="setupDatabase()">Configurar Banco</button>
+        </div>
+        
+        <div class="section">
+            <h2>🔐 Verificação de Autenticação</h2>
+            <div id="auth-results"></div>
+            <button class="btn btn-primary" onclick="testAuth()">Testar Login</button>
+            <button class="btn btn-success" onclick="setupAdmin()">Configurar Admin</button>
+        </div>
+        
+        <div class="section">
+            <h2>📊 Verificação das APIs</h2>
+            <div id="api-results"></div>
+            <button class="btn btn-primary" onclick="testAPIs()">Testar APIs</button>
+        </div>
+        
+        <div class="section">
+            <h2>🌐 Verificação do Frontend</h2>
+            <div id="frontend-results"></div>
+            <button class="btn btn-primary" onclick="testFrontend()">Testar Interface</button>
+        </div>
+        
+        <div class="section">
+            <h2>🚀 Ações Rápidas</h2>
+            <button class="btn btn-success" onclick="fixAll()">🔧 Corrigir Tudo</button>
+            <button class="btn btn-primary" onclick="runDiagnostic()">🔍 Diagnóstico Completo</button>
+            <a href="login.html" class="btn btn-primary">🔐 Ir para Login</a>
+            <a href="admin_simples.html" class="btn btn-primary">📊 Ir para Dashboard</a>
+        </div>
+    </div>
+
+    <script>
+        let diagnosticResults = {};
+        
+        function addResult(section, status, message) {
+            const element = document.getElementById(section + '-results');
+            const div = document.createElement('div');
+            div.className = `test-item ${status}`;
+            div.innerHTML = `<strong>${status.toUpperCase()}:</strong> ${message}`;
+            element.appendChild(div);
+        }
+        
+        function clearResults(section) {
+            document.getElementById(section + '-results').innerHTML = '';
+        }
+        
+        async function testDatabase() {
+            clearResults('database');
+            addResult('database', 'info', 'Testando conexão com banco de dados...');
+            
+            try {
+                const response = await fetch('verificar_banco.php');
+                const text = await response.text();
+                
+                if (text.includes('Conexão estabelecida')) {
+                    addResult('database', 'success', 'Conexão com banco estabelecida');
+                    diagnosticResults.database = true;
+                } else {
+                    addResult('database', 'error', 'Erro na conexão com banco');
+                    diagnosticResults.database = false;
+                }
+                
+                // Verificar tabelas
+                if (text.includes('clientes') && text.includes('dispositivos')) {
+                    addResult('database', 'success', 'Tabelas principais encontradas');
+                } else {
+                    addResult('database', 'warning', 'Algumas tabelas podem estar faltando');
+                }
+                
+            } catch (error) {
+                addResult('database', 'error', 'Erro ao verificar banco: ' + error.message);
+                diagnosticResults.database = false;
+            }
+        }
+        
+        async function setupDatabase() {
+            clearResults('database');
+            addResult('database', 'info', 'Configurando banco de dados...');
+            
+            try {
+                const response = await fetch('setup_completo.php');
+                const text = await response.text();
+                
+                if (text.includes('Configuração concluída')) {
+                    addResult('database', 'success', 'Banco configurado com sucesso');
+                    addResult('database', 'success', 'Tabelas criadas e dados de exemplo inseridos');
+                } else {
+                    addResult('database', 'error', 'Erro na configuração do banco');
+                }
+                
+            } catch (error) {
+                addResult('database', 'error', 'Erro ao configurar banco: ' + error.message);
+            }
+        }
+        
+        async function testAuth() {
+            clearResults('auth');
+            addResult('auth', 'info', 'Testando sistema de autenticação...');
+            
+            try {
+                // Testar API de autenticação
+                const response = await fetch('api/autenticacao.php', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        action: 'login',
+                        username: 'admin',
+                        password: '123456'
+                    })
+                });
+                
+                const data = await response.json();
+                
+                if (data.success) {
+                    addResult('auth', 'success', 'Login funcionando corretamente');
+                    localStorage.setItem('auth_token', data.token || 'test_token');
+                    diagnosticResults.auth = true;
+                } else {
+                    addResult('auth', 'warning', 'Login falhou - pode precisar configurar admin');
+                    diagnosticResults.auth = false;
+                }
+                
+            } catch (error) {
+                addResult('auth', 'error', 'Erro ao testar autenticação: ' + error.message);
+                diagnosticResults.auth = false;
+            }
+        }
+        
+        async function setupAdmin() {
+            clearResults('auth');
+            addResult('auth', 'info', 'Configurando usuário admin...');
+            
+            try {
+                const response = await fetch('configurar_admin.php');
+                const text = await response.text();
+                
+                if (text.includes('Admin configurado') || text.includes('sucesso')) {
+                    addResult('auth', 'success', 'Usuário admin configurado (admin/123456)');
+                } else {
+                    addResult('auth', 'error', 'Erro na configuração do admin');
+                }
+                
+            } catch (error) {
+                addResult('auth', 'error', 'Erro ao configurar admin: ' + error.message);
+            }
+        }
+        
+        async function testAPIs() {
+            clearResults('api');
+            addResult('api', 'info', 'Testando APIs do sistema...');
+            
+            // Testar API do Dashboard
+            try {
+                const response = await fetch('api/dashboard_simples.php?action=admin');
+                const data = await response.json();
+                
+                if (data.success && data.data && data.data.estatisticas) {
+                    addResult('api', 'success', 'API Dashboard funcionando');
+                } else {
+                    addResult('api', 'error', 'API Dashboard com problemas');
+                }
+            } catch (error) {
+                addResult('api', 'error', 'Erro na API Dashboard: ' + error.message);
+            }
+            
+            // Testar API de Medições
+            try {
+                const response = await fetch('api/medicao.php?data=D1N75');
+                const data = await response.json();
+                
+                if (data.success) {
+                    addResult('api', 'success', 'API de Medições funcionando');
+                } else {
+                    addResult('api', 'warning', 'API de Medições precisa de ajustes');
+                }
+            } catch (error) {
+                addResult('api', 'warning', 'API de Medições pode precisar de configuração');
+            }
+        }
+        
+        async function testFrontend() {
+            clearResults('frontend');
+            addResult('frontend', 'info', 'Verificando interface...');
+            
+            // Verificar se arquivos existem
+            const files = ['login.html', 'admin_simples.html', 'gestao_reservatorios.html'];
+            
+            for (const file of files) {
+                try {
+                    const response = await fetch(file, { method: 'HEAD' });
+                    if (response.ok) {
+                        addResult('frontend', 'success', `Arquivo ${file} encontrado`);
+                    } else {
+                        addResult('frontend', 'error', `Arquivo ${file} não encontrado`);
+                    }
+                } catch (error) {
+                    addResult('frontend', 'error', `Erro ao verificar ${file}`);
+                }
+            }
+        }
+        
+        async function fixAll() {
+            addResult('database', 'info', 'Iniciando correção completa...');
+            
+            await setupDatabase();
+            await setupAdmin();
+            await testAPIs();
+            
+            addResult('database', 'success', '🎉 Sistema corrigido! Teste o login agora.');
+        }
+        
+        async function runDiagnostic() {
+            await testDatabase();
+            await testAuth();
+            await testAPIs();
+            await testFrontend();
+            
+            console.log('Resultados do diagnóstico:', diagnosticResults);
+        }
+        
+        // Executar diagnóstico automático ao carregar
+        window.onload = function() {
+            runDiagnostic();
+        };
+    </script>
+</body>
+</html>

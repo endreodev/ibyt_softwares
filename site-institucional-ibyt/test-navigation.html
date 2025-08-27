@@ -1,0 +1,101 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Navegação</title>
+    <style>
+        body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
+        .test-container { max-width: 800px; margin: 0 auto; }
+        .test-link { 
+            display: inline-block; 
+            margin: 10px; 
+            padding: 10px 20px; 
+            background: #007bff; 
+            color: white; 
+            text-decoration: none; 
+            border-radius: 5px; 
+        }
+        .test-link:hover { background: #0056b3; }
+        .debug-info { 
+            background: #f8f9fa; 
+            padding: 20px; 
+            margin: 20px 0; 
+            border: 1px solid #dee2e6; 
+            border-radius: 5px; 
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Teste de Navegação IBYT</h1>
+        
+        <div class="debug-info">
+            <h3>Status do Servidor:</h3>
+            <p id="server-status">Verificando...</p>
+        </div>
+        
+        <h3>Links Diretos:</h3>
+        <a href="index.php" class="test-link">Página Principal</a>
+        <a href="nivel-certo.php" class="test-link">Nível Certo</a>
+        <a href="loja.php" class="test-link">Loja</a>
+        
+        <h3>Links com JavaScript:</h3>
+        <button class="test-link" onclick="testNavigation('index.php')">JS → Página Principal</button>
+        <button class="test-link" onclick="testNavigation('nivel-certo.php')">JS → Nível Certo</button>
+        <button class="test-link" onclick="testNavigation('loja.php')">JS → Loja</button>
+        
+        <div class="debug-info">
+            <h3>Console de Debug:</h3>
+            <div id="debug-console"></div>
+        </div>
+    </div>
+    
+    <script>
+        // Função de debug
+        function log(message) {
+            const console = document.getElementById('debug-console');
+            console.innerHTML += '<p>' + new Date().toLocaleTimeString() + ': ' + message + '</p>';
+        }
+        
+        // Testa status do servidor
+        async function checkServerStatus() {
+            try {
+                const response = await fetch('index.php');
+                document.getElementById('server-status').textContent = 
+                    'Servidor PHP funcionando - Status: ' + response.status;
+                log('Servidor PHP funcionando');
+            } catch (error) {
+                document.getElementById('server-status').textContent = 
+                    'Erro no servidor: ' + error.message;
+                log('Erro no servidor: ' + error.message);
+            }
+        }
+        
+        // Testa navegação via JavaScript
+        function testNavigation(url) {
+            log('Tentando navegar para: ' + url);
+            try {
+                // Teste 1: window.location
+                log('Usando window.location.href');
+                window.location.href = url;
+            } catch (error) {
+                log('Erro na navegação: ' + error.message);
+            }
+        }
+        
+        // Executa testes na inicialização
+        window.addEventListener('load', () => {
+            log('Página de teste carregada');
+            checkServerStatus();
+        });
+        
+        // Adiciona listeners para debug
+        document.addEventListener('click', (e) => {
+            if (e.target.tagName === 'A') {
+                log('Clique em link: ' + e.target.href);
+            }
+        });
+    </script>
+</body>
+</html>

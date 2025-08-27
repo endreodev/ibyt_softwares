@@ -1,0 +1,116 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Teste de Cliques - IBYT</title>
+    <style>
+        body { margin: 0; padding: 20px; font-family: Arial, sans-serif; }
+        .test-container { max-width: 800px; margin: 0 auto; }
+        .test-nav { background: #f8f9fa; padding: 20px; margin: 20px 0; border-radius: 5px; }
+        .nav-link { 
+            display: inline-block; 
+            margin: 10px; 
+            padding: 10px 20px; 
+            background: #007bff; 
+            color: white; 
+            text-decoration: none; 
+            border-radius: 5px; 
+        }
+        .nav-link:hover { background: #0056b3; }
+        .debug-info { 
+            background: #e9ecef; 
+            padding: 15px; 
+            margin: 10px 0; 
+            border-radius: 5px; 
+            font-family: monospace; 
+            max-height: 300px; 
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>Teste de Navegação IBYT - Debug</h1>
+        
+        <div class="test-nav">
+            <h3>Menu de Navegação (Simulação):</h3>
+            <a href="#home" class="nav-link" data-scroll="home">Início</a>
+            <a href="#about" class="nav-link" data-scroll="about">Sobre</a>
+            <a href="nivel-certo.php" class="nav-link">Nível Certo</a>
+            <a href="loja.php" class="nav-link">Loja</a>
+            <a href="#contact" class="nav-link" data-scroll="contact">Contato</a>
+        </div>
+        
+        <div class="debug-info" id="debug-console">
+            <strong>Console de Debug:</strong><br>
+        </div>
+        
+        <div style="margin-top: 20px;">
+            <button onclick="clearDebug()">Limpar Console</button>
+            <button onclick="testDirectNavigation()">Teste Navegação Direta</button>
+        </div>
+    </div>
+    
+    <script>
+        function log(message) {
+            const console = document.getElementById('debug-console');
+            const time = new Date().toLocaleTimeString();
+            console.innerHTML += `<div>${time}: ${message}</div>`;
+            console.scrollTop = console.scrollHeight;
+        }
+        
+        function clearDebug() {
+            document.getElementById('debug-console').innerHTML = '<strong>Console de Debug:</strong><br>';
+        }
+        
+        function testDirectNavigation() {
+            log('Testando navegação direta...');
+            setTimeout(() => {
+                log('Navegando para nivel-certo.php');
+                window.location.href = 'nivel-certo.php';
+            }, 1000);
+        }
+        
+        // Adiciona listeners para debug
+        document.addEventListener('DOMContentLoaded', () => {
+            log('Página carregada e DOM pronto');
+            
+            // Adiciona listeners para todos os links
+            document.querySelectorAll('.nav-link').forEach((link, index) => {
+                log(`Adicionando listener para link ${index}: ${link.textContent} (${link.href})`);
+                
+                link.addEventListener('click', (e) => {
+                    log(`CLIQUE detectado em: ${link.textContent}`);
+                    log(`URL: ${link.href}`);
+                    log(`Data-scroll: ${link.getAttribute('data-scroll') || 'não tem'}`);
+                    
+                    // Para links internos com #, previne navegação
+                    if (link.href.includes('#')) {
+                        log('Link interno detectado - prevenindo navegação padrão');
+                        e.preventDefault();
+                        return false;
+                    } else {
+                        log('Link externo detectado - permitindo navegação');
+                        // Permite navegação normal
+                    }
+                });
+            });
+            
+            log('Todos os listeners foram adicionados');
+        });
+        
+        // Monitor global de cliques
+        document.addEventListener('click', (e) => {
+            if (e.target.tagName === 'A') {
+                log(`CLIQUE GLOBAL em link: ${e.target.textContent} → ${e.target.href}`);
+            }
+        });
+        
+        // Monitor de mudanças de página
+        window.addEventListener('beforeunload', () => {
+            log('Página está sendo descarregada - navegação bem-sucedida!');
+        });
+    </script>
+</body>
+</html>

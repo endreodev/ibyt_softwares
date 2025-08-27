@@ -1,5 +1,6 @@
 #include <WiFi.h>
 #include <HTTPClient.h>
+#include <WiFiClientSecure.h>
 #include <WebServer.h>
 #include <EEPROM.h>
 #include <LoRa.h>
@@ -12,11 +13,12 @@
 
 // ====== RESET E PINOS ======
 #define RESET_PIN 0
+#define LED_PIN 2  // LED indicador de status
 
 // ====== LORA CONFIG ======
 #define LORA_SS 5
 #define LORA_RST 14
-#define LORA_DIO0 2
+#define LORA_DIO0 26  // Mudado para pino 26 para evitar conflito com LED
 #define NETWORK_ID 0x01
 #define GATEWAY_ADDRESS 1
 #define SECRET_KEY 0x5A
@@ -24,11 +26,16 @@
 // ====== CREDENCIAIS E SERVIDOR ======
 char ssid[32] = "";
 char password[64] = "";
-const char* serverUrl = "http://ibyt.com.br/api.php/";
+const char* serverUrl = "https://nivelcerto.ibyt.com.br/api/medicao.php?";
 
 // ====== OBJETOS ======
 WebServer server(80);
 String receivedData = "";
+
+// ====== VARIÁVEIS DE CONTROLE ======
+unsigned long lastLedBlink = 0;
+bool ledState = false;
+bool systemInitialized = false;
 
 // ====== EEPROM ======
 void clearEEPROM() {
@@ -104,6 +111,28 @@ void startConfigPortal() {
   ESP.restart();
 }
 
+// ====== CONTROLE DO LED ======
+void blinkLED() {
+  unsigned long currentTime = millis();
+  if (currentTime - lastLedBlink >= 1000) {  // Pisca a cada 1 segundo
+    ledState = !ledState;
+    digitalWrite(LED_PIN, ledState);
+    lastLedBlink = currentTime;
+  }
+}
+
+void indicateSystemReady() {
+  // Pisca rápido 5 vezes para indicar que o sistema está pronto
+  for (int i = 0; i < 5; i++) {
+    digitalWrite(LED_PIN, HIGH);
+    delay(200);
+    digitalWrite(LED_PIN, LOW);
+    delay(200);
+  }
+  systemInitialized = true;
+  Serial.println("Sistema inicializado e pronto!");
+}
+
 bool connectToWiFi() {
   Serial.printf("Conectando em %s\n", ssid);
   WiFi.begin(ssid, password);
@@ -135,7 +164,8 @@ String encryptDecrypt(String message) {
 // ====== ENVIO DADOS VIA HTTP ======
 void sendDataToServer(String data) {
   if (WiFi.status() == WL_CONNECTED) {
-    WiFiClient client;
+    WiFiClientSecure client;
+    client.setInsecure(); // Ignora verificação do certificado
     HTTPClient http;
 
     String url = String(serverUrl) + data;
@@ -161,14 +191,33 @@ void sendDataToServer(String data) {
 // ====== SETUP ======
 void setup() {
   Serial.begin(115200);
+  Serial.println("Serial inicializada em 115200");
   pinMode(RESET_PIN, INPUT_PULLUP);
+  pinMode(LED_PIN, OUTPUT);
+  digitalWrite(LED_PIN, LOW);  // LED inicialmente desligado
+  
   EEPROM.begin(EEPROM_SIZE);
 
+  Serial.println("=== INICIANDO GATEWAY LORA ===");
+
+  // Verifica se o botão de reset está sendo pressionado INTENCIONALMENTE
+  // (segurar por mais de 3 segundos durante a inicialização)
+  bool forceReset = false;
   if (digitalRead(RESET_PIN) == LOW) {
-    Serial.println("Reset solicitado. Limpando EEPROM...");
-    clearEEPROM();
-    delay(1000);
-    ESP.restart();
+    Serial.println("Botão de reset detectado. Aguardando confirmação...");
+    unsigned long resetStartTime = millis();
+    while (digitalRead(RESET_PIN) == LOW && (millis() - resetStartTime) < 3000) {
+      delay(100);
+    }
+    if ((millis() - resetStartTime) >= 3000) {
+      forceReset = true;
+      Serial.println("Reset confirmado. Limpando EEPROM...");
+      clearEEPROM();
+      delay(1000);
+      ESP.restart();
+    } else {
+      Serial.println("Reset cancelado. Continuando inicialização normal...");
+    }
   }
 
   if (credentialsExist()) {
@@ -186,14 +235,27 @@ void setup() {
   LoRa.setPins(LORA_SS, LORA_RST, LORA_DIO0);
   if (!LoRa.begin(915E6)) {
     Serial.println("Erro ao iniciar LoRa");
-    while (true);
+    while (true) {
+      digitalWrite(LED_PIN, HIGH);
+      delay(100);
+      digitalWrite(LED_PIN, LOW);
+      delay(100);
+    }
   }
   LoRa.setSyncWord(0xF3);
   Serial.println("LoRa do Gateway inicializado");
+  
+  // Indica que o sistema está pronto
+  indicateSystemReady();
 }
 
 // ====== LOOP PRINCIPAL ======
 void loop() {
+  // Controla o LED indicador se o sistema estiver inicializado
+  if (systemInitialized) {
+    blinkLED();
+  }
+
   // Verifica conexão WiFi
   if (WiFi.status() != WL_CONNECTED) {
     Serial.println("WiFi caiu. Reconectando...");
@@ -218,8 +280,23 @@ void loop() {
     }
 
     String decrypted = encryptDecrypt(encrypted);
-    Serial.println("Recebido via LoRa: " + decrypted);
+    Serial.print("Recebido via LoRa: ");
+    Serial.println(decrypted);
+    Serial.print("Raw: ");
+    for (size_t i = 0; i < encrypted.length(); i++) {
+      Serial.print((uint8_t)encrypted[i]); Serial.print(" ");
+    }
+    Serial.println();
     sendDataToServer(decrypted);
+    
+    // Pisca LED mais rápido quando recebe dados
+    digitalWrite(LED_PIN, HIGH);
+    delay(50);
+    digitalWrite(LED_PIN, LOW);
+    delay(50);
+    digitalWrite(LED_PIN, HIGH);
+    delay(50);
+    digitalWrite(LED_PIN, LOW);
   }
 
   delay(10);

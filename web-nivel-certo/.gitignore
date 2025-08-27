@@ -1,0 +1,55 @@
+# Arquivos de configuração local
+config/database-local.php
+
+# Logs
+logs/*.log
+logs/*.txt
+!logs/.htaccess
+
+# Arquivos temporários
+*.tmp
+*.temp
+*.bak
+*~
+
+# Arquivos de sistema
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Node modules (se usar)
+node_modules/
+
+# Composer (manter apenas composer.json)
+vendor/composer/
+vendor/bin/
+
+# Arquivos de teste e desenvolvimento
+teste_*.php
+teste_*.html
+debug_*.php
+temp_*.php
+ambiente.php
+diagnostico.php
+
+# Arquivos de backup
+backup/
+*.backup
+*.sql.bak
+
+# Cache
+cache/
+*.cache
+
+# Uploads temporários
+uploads/temp/
+
+# IDEs
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# Arquivos PHP de setup temporários (exceto o principal)
+setup_temp.php
+setup_test.php

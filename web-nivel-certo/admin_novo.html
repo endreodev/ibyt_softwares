@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>IBYT Water Level - Dashboard Administrativo</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .sidebar {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 0;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 250px;
+            z-index: 1001;
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar .nav-link {
+            color: rgba(255,255,255,0.8);
+            padding: 12px 20px;
+            border-radius: 0;
+            margin: 2px 10px;
+            transition: all 0.3s ease;
+        }
+        
+        .sidebar .nav-link:hover,
+        .sidebar .nav-link.active {
+            background: rgba(255,255,255,0.1);
+            color: white;
+            border-radius: 8px;
+        }
+        
+        .main-content {
+            margin-left: 250px;
+            padding: 20px;
+            background: #f8f9fa;
+            min-height: 100vh;
+        }
+        
+        .card {
+            border: none;
+            border-radius: 15px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+            transition: all 0.3s ease;
+        }
+        
+        .card:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(0,0,0,0.15);
+        }
+        
+        .card-stat {
+            border-radius: 15px;
+            overflow: hidden;
+        }
+        
+        .bg-primary-gradient {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+        }
+        
+        .bg-success-gradient {
+            background: linear-gradient(135deg, #56ab2f 0%, #a8e6cf 100%);
+        }
+        
+        .bg-info-gradient {
+            background: linear-gradient(135deg, #3498db 0%, #85c1e9 100%);
+        }
+        
+        .bg-warning-gradient {
+            background: linear-gradient(135deg, #f39c12 0%, #f7dc6f 100%);
+        }
+        
+        .loading {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0,0,0,0.8);
+            z-index: 9999;
+            display: none;
+        }
+        
+        .chart-container {
+            position: relative;
+            height: 300px;
+        }
+        
+        @media (max-width: 768px) {
+            .sidebar {
+                margin-left: -250px;
+            }
+            .main-content {
+                margin-left: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- Loading -->
+    <div id="loading" class="loading d-flex align-items-center justify-content-center">
+        <div class="spinner-border text-light" role="status">
+            <span class="visually-hidden">Carregando...</span>
+        </div>
+    </div>
+
+    <!-- Sidebar -->
+    <nav class="sidebar">
+        <div class="p-3 text-white">
+            <h4><i class="fas fa-tint me-2"></i>IBYT Water</h4>
+            <p class="mb-0">Sistema de Gestão</p>
+        </div>
+        
+        <ul class="nav flex-column mt-4">
+            <li class="nav-item">
+                <a class="nav-link active" href="#" onclick="loadDashboard()">
+                    <i class="fas fa-chart-pie me-2"></i>Dashboard
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" onclick="loadClientes()">
+                    <i class="fas fa-building me-2"></i>Clientes
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" onclick="loadDispositivos()">
+                    <i class="fas fa-microchip me-2"></i>Dispositivos
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" onclick="loadMedicoes()">
+                    <i class="fas fa-chart-line me-2"></i>Medições
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="gestao_reservatorios.html">
+                    <i class="fas fa-water me-2"></i>Reservatórios
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" onclick="loadRelatorios()">
+                    <i class="fas fa-file-alt me-2"></i>Relatórios
+                </a>
+            </li>
+            <li class="nav-item">
+                <a class="nav-link" href="#" onclick="loadUsuarios()">
+                    <i class="fas fa-users me-2"></i>Usuários
+                </a>
+            </li>
+        </ul>
+        
+        <div class="mt-auto p-3">
+            <hr class="border-light">
+            <div class="d-flex align-items-center text-white">
+                <i class="fas fa-user-circle fa-2x me-2"></i>
+                <div>
+                    <small>Logado como:</small><br>
+                    <span id="user-name">Admin</span>
+                </div>
+            </div>
+            <button class="btn btn-outline-light btn-sm mt-2 w-100" onclick="logout()">
+                <i class="fas fa-sign-out-alt me-1"></i>Sair
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Content -->
+    <main class="main-content">
+        <div id="content">
+            <!-- Conteúdo será carregado aqui -->
+        </div>
+    </main>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+    <script>
+        const API_BASE = 'api/';
+        
+        // Verificar autenticação
+        function checkAuth() {
+            const token = localStorage.getItem('auth_token');
+            if (!token || token === 'no_auth') {
+                window.location.href = 'login.html';
+                return false;
+            }
+            return true;
+        }
+        
+        // Mostrar/esconder loading
+        function showLoading(show = true) {
+            document.getElementById('loading').style.display = show ? 'flex' : 'none';
+        }
+        
+        // Fazer requisição à API
+        async function apiRequest(endpoint, options = {}) {
+            showLoading(true);
+            
+            try {
+                const response = await fetch(API_BASE + endpoint, {
+                    headers: {
+                        'Content-Type': 'application/json',
+                        ...options.headers
+                    },
+                    ...options
+                });
+                
+                const data = await response.json();
+                showLoading(false);
+                return data;
+                
+            } catch (error) {
+                showLoading(false);
+                throw error;
+            }
+        }
+        
+        // Carregar Dashboard
+        async function loadDashboard() {
+            try {
+                const data = await apiRequest('dashboard_simples.php?action=admin');
+                
+                console.log('Dashboard API Response:', data);
+                
+                if (!data.success) {
+                    throw new Error(data.message || 'Erro ao carregar dashboard');
+                }
+                
+                const stats = data.data;
+                
+                // Verificar se as estatísticas existem
+                if (!stats || !stats.estatisticas) {
+                    console.error('Estrutura de dados inválida:', stats);
+                    throw new Error('Dados do dashboard não encontrados');
+                }
+                
+                const estatisticas = stats.estatisticas;
+                
+                document.getElementById('content').innerHTML = `
+                    <div class="row mb-4">
+                        <div class="col-12">
+                            <h2>Dashboard Administrativo</h2>
+                            <p class="text-muted">Visão geral do sistema de monitoramento</p>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <div class="card card-stat bg-primary-gradient text-white">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-building fa-2x me-3"></i>
+                                        <div>
+                                            <h3 class="mb-0">${estatisticas.total_clientes || 0}</h3>
+                                            <p class="mb-0">Clientes</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <div class="card card-stat bg-success-gradient text-white">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-microchip fa-2x me-3"></i>
+                                        <div>
+                                            <h3 class="mb-0">${estatisticas.total_dispositivos || 0}</h3>
+                                            <p class="mb-0">Dispositivos</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <div class="card card-stat bg-info-gradient text-white">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-tint fa-2x me-3"></i>
+                                        <div>
+                                            <h3 class="mb-0">${estatisticas.total_reservatorios || 0}</h3>
+                                            <p class="mb-0">Reservatórios</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-3 col-md-6 mb-3">
+                            <div class="card card-stat bg-warning-gradient text-white">
+                                <div class="card-body">
+                                    <div class="d-flex align-items-center">
+                                        <i class="fas fa-chart-line fa-2x me-3"></i>
+                                        <div>
+                                            <h3 class="mb-0">${estatisticas.medicoes_hoje || 0}</h3>
+                                            <p class="mb-0">Medições Hoje</p>
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <div class="row mb-4">
+                        <div class="col-lg-8 mb-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-clock me-2"></i>Últimas Medições</h5>
+                                </div>
+                                <div class="card-body">
+                                    ${stats.listas && stats.listas.ultimas_medicoes && stats.listas.ultimas_medicoes.length > 0 
+                                        ? stats.listas.ultimas_medicoes.map(medicao => `
+                                            <div class="d-flex justify-content-between align-items-center p-2 border-bottom">
+                                                <div>
+                                                    <strong>Dispositivo ${medicao.dispositivo_id}</strong><br>
+                                                    <small class="text-muted">${medicao.identificador || 'N/A'}</small>
+                                                </div>
+                                                <div class="text-center">
+                                                    <span class="badge ${medicao.nivel_agua < 20 ? 'bg-danger' : medicao.nivel_agua > 80 ? 'bg-success' : 'bg-warning'} fs-6">
+                                                        ${medicao.nivel_agua}%
+                                                    </span><br>
+                                                    <small class="text-muted">${new Date(medicao.timestamp_medicao).toLocaleString('pt-BR')}</small>
+                                                </div>
+                                            </div>
+                                        `).join('') 
+                                        : '<div class="text-center text-muted p-4"><i class="fas fa-chart-line fa-3x mb-3"></i><br>Nenhuma medição encontrada</div>'
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="col-lg-4 mb-4">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-exclamation-triangle me-2"></i>Alertas</h5>
+                                </div>
+                                <div class="card-body">
+                                    ${stats.listas && stats.listas.alertas && stats.listas.alertas.length > 0 
+                                        ? stats.listas.alertas.map(alerta => `
+                                            <div class="alert ${alerta.nivel_agua < 20 ? 'alert-danger' : 'alert-warning'} mb-2">
+                                                <div class="d-flex justify-content-between align-items-center">
+                                                    <div>
+                                                        <strong>${alerta.identificador || 'Dispositivo ' + alerta.dispositivo_id}</strong><br>
+                                                        <small>${alerta.nome_fantasia || 'Cliente não identificado'}</small>
+                                                    </div>
+                                                    <div class="text-end">
+                                                        <span class="badge ${alerta.nivel_agua < 20 ? 'bg-danger' : 'bg-warning'} fs-6">${alerta.nivel_agua}%</span><br>
+                                                        <small class="text-muted">${new Date(alerta.timestamp_medicao).toLocaleString('pt-BR')}</small>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        `).join('') 
+                                        : '<div class="text-center text-muted p-4"><i class="fas fa-check-circle fa-3x mb-3 text-success"></i><br>Nenhum alerta no momento</div>'
+                                    }
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    ${stats.graficos && stats.graficos.clientes_por_cidade && stats.graficos.clientes_por_cidade.length > 0 ? `
+                    <div class="row">
+                        <div class="col-12">
+                            <div class="card">
+                                <div class="card-header">
+                                    <h5><i class="fas fa-map-marker-alt me-2"></i>Clientes por Cidade</h5>
+                                </div>
+                                <div class="card-body">
+                                    ${stats.graficos.clientes_por_cidade.map(item => `
+                                        <div class="d-flex justify-content-between align-items-center mb-2 p-2">
+                                            <span><i class="fas fa-city me-2"></i>${item.cidade}</span>
+                                            <span class="badge bg-primary">${item.total}</span>
+                                        </div>
+                                    `).join('')}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    ` : ''}
+                `;
+                
+                updateNavigation('dashboard');
+                
+            } catch (error) {
+                console.error('Erro ao carregar dashboard:', error);
+                document.getElementById('content').innerHTML = `
+                    <div class="alert alert-danger">
+                        <h4><i class="fas fa-exclamation-triangle me-2"></i>Erro ao carregar dashboard</h4>
+                        <p>Detalhes: ${error.message}</p>
+                        <button class="btn btn-primary" onclick="loadDashboard()">
+                            <i class="fas fa-redo me-2"></i>Tentar novamente
+                        </button>
+                        <a href="teste_sistema_completo.html" class="btn btn-secondary">
+                            <i class="fas fa-wrench me-2"></i>Diagnóstico do Sistema
+                        </a>
+                    </div>
+                `;
+            }
+        }
+        
+        // Outras funções de carregamento
+        function loadClientes() {
+            document.getElementById('content').innerHTML = `
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h2>Gestão de Clientes</h2>
+                        <p class="text-muted">Gerenciar clientes e seus dados</p>
+                    </div>
+                </div>
+                <div class="alert alert-info">
+                    <h4><i class="fas fa-info-circle me-2"></i>Módulo em Desenvolvimento</h4>
+                    <p>A gestão completa de clientes estará disponível em breve.</p>
+                    <p>Por enquanto, você pode:</p>
+                    <ul>
+                        <li>Visualizar estatísticas no dashboard</li>
+                        <li>Gerenciar reservatórios</li>
+                        <li>Monitorar medições em tempo real</li>
+                    </ul>
+                    <a href="gestao_reservatorios.html" class="btn btn-primary">
+                        <i class="fas fa-water me-2"></i>Ir para Gestão de Reservatórios
+                    </a>
+                </div>
+            `;
+            updateNavigation('clientes');
+        }
+        
+        function loadDispositivos() {
+            document.getElementById('content').innerHTML = `
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h2>Gestão de Dispositivos IoT</h2>
+                        <p class="text-muted">Gerenciar sensores e dispositivos</p>
+                    </div>
+                </div>
+                <div class="alert alert-info">
+                    <h4><i class="fas fa-microchip me-2"></i>Módulo em Desenvolvimento</h4>
+                    <p>A gestão de dispositivos IoT estará disponível em breve.</p>
+                    <p>Funcionalidades planejadas:</p>
+                    <ul>
+                        <li>Cadastro e configuração de sensores</li>
+                        <li>Monitoramento de status dos dispositivos</li>
+                        <li>Calibração e manutenção</li>
+                        <li>Histórico de funcionamento</li>
+                    </ul>
+                    <div class="card mt-3">
+                        <div class="card-body">
+                            <h5>Teste de Medição</h5>
+                            <p>Para testar o recebimento de dados dos sensores, use:</p>
+                            <code>GET /api/medicao.php?data=D1N75</code>
+                            <br><small class="text-muted">Dispositivo 1, Nível 75%</small>
+                        </div>
+                    </div>
+                </div>
+            `;
+            updateNavigation('dispositivos');
+        }
+        
+        function loadMedicoes() {
+            document.getElementById('content').innerHTML = `
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h2>Relatórios de Medições</h2>
+                        <p class="text-muted">Visualizar histórico e dados dos sensores</p>
+                    </div>
+                </div>
+                <div class="alert alert-info">
+                    <h4><i class="fas fa-chart-line me-2"></i>Módulo em Desenvolvimento</h4>
+                    <p>O sistema de relatórios de medições estará disponível em breve.</p>
+                    <p>Funcionalidades planejadas:</p>
+                    <ul>
+                        <li>Gráficos históricos de níveis</li>
+                        <li>Relatórios por período</li>
+                        <li>Exportação de dados</li>
+                        <li>Alertas automáticos</li>
+                    </ul>
+                    <button class="btn btn-primary" onclick="loadDashboard()">
+                        <i class="fas fa-chart-pie me-2"></i>Ver Últimas Medições no Dashboard
+                    </button>
+                </div>
+            `;
+            updateNavigation('medicoes');
+        }
+        
+        function loadRelatorios() {
+            document.getElementById('content').innerHTML = `
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h2>Relatórios e Análises</h2>
+                        <p class="text-muted">Relatórios gerenciais e análises</p>
+                    </div>
+                </div>
+                <div class="alert alert-info">
+                    <h4><i class="fas fa-file-alt me-2"></i>Módulo em Desenvolvimento</h4>
+                    <p>O sistema de relatórios gerenciais estará disponível em breve.</p>
+                </div>
+            `;
+            updateNavigation('relatorios');
+        }
+        
+        function loadUsuarios() {
+            document.getElementById('content').innerHTML = `
+                <div class="row mb-4">
+                    <div class="col-12">
+                        <h2>Gestão de Usuários</h2>
+                        <p class="text-muted">Gerenciar usuários e permissões</p>
+                    </div>
+                </div>
+                <div class="alert alert-info">
+                    <h4><i class="fas fa-users me-2"></i>Módulo em Desenvolvimento</h4>
+                    <p>A gestão de usuários estará disponível em breve.</p>
+                </div>
+            `;
+            updateNavigation('usuarios');
+        }
+        
+        // Atualizar navegação
+        function updateNavigation(active) {
+            document.querySelectorAll('.nav-link').forEach(link => {
+                link.classList.remove('active');
+            });
+            
+            const activeMap = {
+                'dashboard': 0,
+                'clientes': 1,
+                'dispositivos': 2,
+                'medicoes': 3,
+                'relatorios': 5,
+                'usuarios': 6
+            };
+            
+            const index = activeMap[active];
+            if (index !== undefined) {
+                document.querySelectorAll('.nav-link')[index].classList.add('active');
+            }
+        }
+        
+        // Logout
+        function logout() {
+            if (confirm('Deseja realmente sair do sistema?')) {
+                localStorage.removeItem('auth_token');
+                localStorage.removeItem('user_data');
+                window.location.href = 'login.html';
+            }
+        }
+        
+        // Inicialização
+        window.onload = function() {
+            if (checkAuth()) {
+                const userData = JSON.parse(localStorage.getItem('user_data') || '{}');
+                document.getElementById('user-name').textContent = userData.nome || 'Admin';
+                loadDashboard();
+            }
+        };
+    </script>
+</body>
+</html>
