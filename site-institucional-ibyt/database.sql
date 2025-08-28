@@ -1,6 +1,8 @@
 -- IBYT Store Database Schema
 -- Execute este script para criar a estrutura do banco de dados
 
+
+
 -- Usar o banco de dados correto
 USE u454452574_ibyt;
 
