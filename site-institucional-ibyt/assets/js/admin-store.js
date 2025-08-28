@@ -56,7 +56,18 @@ function setupAdminEventListeners() {
 async function loadAdminApps() {
     try {
         // Simulate API call - replace with actual endpoint
-        const response = await fetch('api/admin-apps.php');
+        const response = await fetch('api/admin-apps.php', {
+            credentials: 'same-origin' // Include session cookies
+        });
+        
+        if (response.status === 401) {
+            // Authentication error - redirect to login
+            showAdminNotification('Sessão expirada. Redirecionando para login...', 'error');
+            setTimeout(() => {
+                window.location.href = 'login-admin.php';
+            }, 2000);
+            return;
+        }
         
         if (response.ok) {
             adminApps = await response.json();
@@ -493,11 +504,26 @@ async function confirmDelete() {
         const response = await fetch('api/delete-app.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ _method: 'DELETE', id: appId })
+            body: JSON.stringify({ _method: 'DELETE', id: appId }),
+            credentials: 'same-origin' // Include session cookies
         });
+        
+        // Check if it's an authentication error
+        if (response.status === 401) {
+            showAdminNotification('Sessão expirada. Redirecionando para login...', 'error');
+            setTimeout(() => {
+                window.location.href = 'login-admin.php';
+            }, 2000);
+            return;
+        }
+        
         // Optional: read JSON for message
         let data = null;
-        try { data = await response.json(); } catch (_) {}
+        try { 
+            data = await response.json(); 
+        } catch (e) {
+            console.error('Error parsing JSON:', e);
+        }
 
         if (response.ok && data && data.success) {
             // Remove from local data
@@ -509,12 +535,12 @@ async function confirmDelete() {
             closeDeleteModal();
             showAdminNotification(((data && data.message) || 'Aplicativo excluído com sucesso!'), 'success');
         } else {
-            const msg = (data && data.message) ? data.message : 'Erro ao excluir aplicativo';
+            const msg = (data && data.message) ? data.message : `Erro ao excluir aplicativo (Status: ${response.status})`;
             throw new Error(msg);
         }
     } catch (error) {
         console.error('Error deleting app:', error);
-        showAdminNotification('Erro ao excluir aplicativo. Tente novamente.', 'error');
+        showAdminNotification(`Erro ao excluir aplicativo: ${error.message}`, 'error');
     }
 }
 

@@ -42,28 +42,38 @@
                 <img src="assets/img/logo.png" alt="IBYT Software" width="110" height="auto">
                 <span class="logo-text">IBYT Store</span>
             </div>
+
+            <div class="header-search-box">
+                <span class="material-icons-round">search</span>
+                <input type="text" id="searchInput" placeholder="Buscar aplicativos...">
+            </div>
                 
-                <nav class="main-navigation" id="navigation">
-                    <a href="index.php" class="nav-link">
-                        <span class="material-icons-round">home</span>
-                        Início
-                    </a>
-                    <a href="index.php#about" class="nav-link">Sobre</a>
-                    <a href="index.php#services" class="nav-link">Serviços</a>
-                    <a href="nivel-certo.php" class="nav-link">Nível Certo</a>
-                    <a href="loja.php" class="nav-link active">Loja</a>
-                    <a href="admin-loja.php" class="nav-link admin-link">
-                        <span class="material-icons-round">admin_panel_settings</span>
-                        Admin
-                    </a>
-                    <a href="index.php#contact" class="nav-link">Contato</a>
-                </nav>
+            <nav class="main-navigation" id="navigation">
+                <a href="index.php" class="nav-link">
+                    <span class="material-icons-round">home</span>
+                    Início
+                </a>
+                <a href="index.php#about" class="nav-link">Sobre</a>
+                <a href="index.php#services" class="nav-link">Serviços</a>
+                <a href="nivel-certo.php" class="nav-link">Nível Certo</a>
+                <a href="loja.php" class="nav-link active">Loja</a>
+                <a href="login-admin.php" class="nav-link admin-link">
+                    <span class="material-icons-round">admin_panel_settings</span>
+                    Admin
+                </a>
+                <a href="index.php#contact" class="nav-link">Contato</a>
+            </nav>
+
+            <!-- Mobile menu button -->
+            <button class="mobile-menu-toggle" id="mobile-menu-toggle">
+                <span class="material-icons-round">menu</span>
+            </button>
         </div>
     </header>
 
     <!-- Main Content -->
     <main class="main-content">
-        <!-- Hero Section -->
+        <!-- 
         <section class="hero-store">
             <div class="container">
                 <div class="hero-content">
@@ -73,14 +83,10 @@
                     </h1>
                     <p>Aplicativos profissionais desenvolvidos especialmente para sua empresa</p>
                     
-                    <!-- Search Bar -->
+                    
                     <div class="search-container">
-                        <div class="search-box">
-                            <span class="material-icons-round">search</span>
-                            <input type="text" id="searchInput" placeholder="Buscar aplicativos...">
-                        </div>
                         
-                        <!-- Filter Buttons -->
+                         
                         <div class="filter-buttons">
                             <button class="filter-btn active" data-category="all">
                                 <span class="material-icons-round">apps</span>
@@ -99,12 +105,11 @@
                                 Utilidades
                             </button>
                         </div>
-                    </div>
+                    </div> 
                 </div>
             </div>
         </section>
-
-        <!-- Apps Grid -->
+  -->
         <section class="apps-section">
             <div class="container">
                 <div class="section-header">
@@ -146,23 +151,11 @@
                     <span class="material-icons-round">star</span>
                     Aplicativos em Destaque
                 </h2>
-                <div class="featured-grid">
-                    <div class="featured-app">
-                        <div class="app-icon">
-                            <span class="material-icons-round">water_drop</span>
-                        </div>
-                        <div class="app-info">
-                            <h3>Nível Certo App</h3>
-                            <p>Monitore seus reservatórios em tempo real</p>
-                            <div class="app-rating">
-                                <span class="stars">★★★★★</span>
-                                <span class="rating-text">4.9 (127 avaliações)</span>
-                            </div>
-                        </div>
-                        <button class="download-btn" onclick="showAppDetails('nivel-certo')">
-                            <span class="material-icons-round">download</span>
-                            Baixar
-                        </button>
+                <div id="featuredGrid" class="featured-grid">
+                    <!-- Featured apps will be loaded here by JavaScript -->
+                    <div class="loading-featured">
+                        <div class="loading-spinner"></div>
+                        <p>Carregando apps em destaque...</p>
                     </div>
                 </div>
             </div>
@@ -183,66 +176,107 @@
                 <div class="app-details">
                     <div class="app-icon-large">
                         <img id="modalIcon" src="" alt="App Icon">
+                        <div class="app-badge" id="modalBadge" style="display: none;">
+                            <span class="material-icons-round">verified</span>
+                        </div>
                     </div>
                     
                     <div class="app-info-detailed">
                         <h3 id="modalAppName">Nome do App</h3>
-                        <p id="modalDeveloper">IBYT Software</p>
+                        <p id="modalDeveloper" class="developer-name">IBYT Software</p>
                         
                         <div class="app-rating-detailed">
-                            <span id="modalRating" class="stars">★★★★★</span>
-                            <span id="modalRatingText" class="rating-text">4.9</span>
-                            <span class="downloads">1.000+ downloads</span>
+                            <div class="rating-stars">
+                                <span id="modalRating" class="stars">★★★★★</span>
+                                <span id="modalRatingText" class="rating-text">4.9</span>
+                            </div>
+                            <div class="download-stats">
+                                <span class="material-icons-round">download</span>
+                                <span id="modalDownloads" class="downloads">1.000+ downloads</span>
+                            </div>
                         </div>
                         
                         <div class="app-tags">
-                            <span id="modalCategory" class="tag">Monitoramento</span>
-                            <span class="tag">Gratuito</span>
+                            <span id="modalCategory" class="tag category-tag">Monitoramento</span>
+                            <span id="modalPrice" class="tag price-tag">Gratuito</span>
+                            <span id="modalFeatured" class="tag featured-tag" style="display: none;">
+                                <span class="material-icons-round">star</span> Destaque
+                            </span>
+                        </div>
+                        
+                        <div class="app-quick-info">
+                            <div class="quick-info-item">
+                                <span class="material-icons-round">update</span>
+                                <div>
+                                    <span class="label">Versão</span>
+                                    <span id="modalVersion" class="value">1.0.0</span>
+                                </div>
+                            </div>
+                            <div class="quick-info-item">
+                                <span class="material-icons-round">storage</span>
+                                <div>
+                                    <span class="label">Tamanho</span>
+                                    <span id="modalSize" class="value">5.2 MB</span>
+                                </div>
+                            </div>
+                            <div class="quick-info-item">
+                                <span class="material-icons-round">phone_android</span>
+                                <div>
+                                    <span class="label">Compatibilidade</span>
+                                    <span id="modalCompatibility" class="value">Android 6.0+</span>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>
                 
+                <div class="app-description">
+                    <h4><span class="material-icons-round">description</span> Descrição</h4>
+                    <p id="modalDescription">Descrição do aplicativo...</p>
+                </div>
+                
                 <div class="app-screenshots">
-                    <h4>Capturas de Tela</h4>
+                    <h4><span class="material-icons-round">photo_library</span> Capturas de Tela</h4>
                     <div id="screenshotsContainer" class="screenshots-grid">
                         <!-- Screenshots will be loaded here -->
                     </div>
                 </div>
                 
-                <div class="app-description">
-                    <h4>Descrição</h4>
-                    <p id="modalDescription">Descrição do aplicativo...</p>
-                </div>
-                
-                <div class="app-details-grid">
-                    <div class="detail-item">
-                        <span class="label">Versão:</span>
-                        <span id="modalVersion" class="value">1.0.0</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="label">Tamanho:</span>
-                        <span id="modalSize" class="value">5.2 MB</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="label">Atualizado:</span>
-                        <span id="modalUpdated" class="value">20/08/2025</span>
-                    </div>
-                    <div class="detail-item">
-                        <span class="label">Compatibilidade:</span>
-                        <span id="modalCompatibility" class="value">Android 6.0+</span>
+                <div class="app-additional-info">
+                    <div class="info-section">
+                        <h5><span class="material-icons-round">info</span> Informações Adicionais</h5>
+                        <div class="info-grid">
+                            <div class="info-item">
+                                <span class="label">Última Atualização:</span>
+                                <span id="modalUpdated" class="value">20/08/2025</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="label">Oferecido por:</span>
+                                <span id="modalDeveloperInfo" class="value">IBYT Software</span>
+                            </div>
+                            <div class="info-item">
+                                <span class="label">Classificação:</span>
+                                <span class="value">Livre para todos</span>
+                            </div>
+                        </div>
                     </div>
                 </div>
             </div>
             
             <div class="modal-footer">
-                <button id="downloadBtn" class="download-btn-large">
-                    <span class="material-icons-round">download</span>
-                    Baixar APK
-                </button>
-                <button class="share-btn" onclick="shareApp()">
-                    <span class="material-icons-round">share</span>
-                    Compartilhar
-                </button>
+                <div class="download-section">
+                    <button id="downloadBtn" class="download-btn-large">
+                        <span class="material-icons-round">download</span>
+                        <div class="btn-content">
+                            <span class="btn-text">Baixar APK</span>
+                            <span class="btn-subtext">Instalação direta</span>
+                        </div>
+                    </button>
+                    <button class="share-btn" onclick="shareApp()">
+                        <span class="material-icons-round">share</span>
+                        Compartilhar
+                    </button>
+                </div>
             </div>
         </div>
     </div>

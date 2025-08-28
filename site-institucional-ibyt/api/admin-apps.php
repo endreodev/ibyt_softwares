@@ -1,4 +1,13 @@
 <?php
+// Verificar autenticação administrativa
+session_start();
+if (!isset($_SESSION['admin_logged_in']) || $_SESSION['admin_logged_in'] !== true) {
+    http_response_code(401);
+    header('Content-Type: application/json');
+    echo json_encode(['error' => 'Acesso não autorizado']);
+    exit();
+}
+
 // Incluir configurações centralizadas
 require_once '../config.php';
 

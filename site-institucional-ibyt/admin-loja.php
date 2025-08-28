@@ -1,3 +1,7 @@
+<?php
+// Verificar autenticação administrativa
+require_once 'admin-auth.php';
+?>
 <!DOCTYPE html>
 <html lang="pt-BR">
 <head>
@@ -46,6 +50,14 @@
                 </nav>
 
                 <div class="header-actions">
+                    <div class="admin-user-info">
+                        <span class="material-icons-round">admin_panel_settings</span>
+                        <span class="user-name"><?php echo htmlspecialchars($_SESSION['admin_user']); ?></span>
+                    </div>
+                    <a href="logout.php" class="logout-btn" title="Sair">
+                        <span class="material-icons-round">logout</span>
+                        <span class="logout-text">Sair</span>
+                    </a>
                     <button class="mobile-menu-toggle" id="mobile-menu-toggle" aria-label="Alternar menu">
                         <span class="material-icons-round">menu</span>
                     </button>

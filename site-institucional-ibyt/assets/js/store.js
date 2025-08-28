@@ -5,6 +5,7 @@ let apps = [];
 let filteredApps = [];
 let currentFilter = 'all';
 let currentView = 'grid';
+let currentAppId = null; // tracks the app opened in the details modal
 
 // DOM Elements
 const appsContainer = document.getElementById('appsContainer');
@@ -62,7 +63,9 @@ async function loadApps() {
         const response = await fetch('api/apps.php');
         
         if (response.ok) {
-            apps = await response.json();
+            const data = await response.json();
+            // Normalize server data (snake_case -> camelCase) to match UI expectations
+            apps = Array.isArray(data) ? data.map(normalizeApp) : [];
         } else {
             // Fallback data for demo
             apps = await loadDemoApps();
@@ -70,6 +73,7 @@ async function loadApps() {
         
         filteredApps = [...apps];
         renderApps();
+        renderFeaturedApps();
         
     } catch (error) {
         console.error('Error loading apps:', error);
@@ -77,7 +81,42 @@ async function loadApps() {
         apps = await loadDemoApps();
         filteredApps = [...apps];
         renderApps();
+        renderFeaturedApps();
     }
+}
+
+// Normalize API app object to the shape used by the UI
+function normalizeApp(app) {
+    // Handle both demo (camelCase) and DB (snake_case) keys
+    const screenshots = Array.isArray(app.screenshots)
+        ? app.screenshots
+        : (typeof app.screenshots === 'string' && app.screenshots.trim().startsWith('[')
+            ? JSON.parse(app.screenshots)
+            : []);
+    const tags = Array.isArray(app.tags)
+        ? app.tags
+        : (typeof app.tags === 'string' ? app.tags.split(',').map(t => t.trim()).filter(Boolean) : []);
+
+    return {
+        id: Number(app.id) || 0,
+        name: app.name || '',
+        developer: app.developer || '',
+        category: app.category || 'utilidades',
+        description: app.description || '',
+        version: app.version || '',
+        size: app.size || '',
+        rating: typeof app.rating === 'number' ? app.rating : Number(app.rating) || 0,
+        downloads: typeof app.downloads === 'number' ? app.downloads : Number(app.downloads) || 0,
+        price: typeof app.price === 'number' ? app.price : Number(app.price) || 0,
+        featured: Boolean(app.featured),
+        status: app.status || 'active',
+        icon: app.icon || '',
+        screenshots,
+        apkUrl: app.apkUrl || app.apk_url || '',
+        compatibility: app.compatibility || '',
+        updatedAt: app.updatedAt || app.updated_at || '',
+        tags
+    };
 }
 
 // Demo Apps Data
@@ -255,21 +294,23 @@ function createAppCard(app) {
                     ${app.icon ? `<img src="${app.icon}" alt="${app.name}">` : `<span class="material-icons-round">apps</span>`}
                 </div>
                 <div class="app-info">
-                    <h3>${app.name}</h3>
+                    <h3 class="app-name">${app.name}</h3>
                     <div class="app-developer">${app.developer}</div>
                     <div class="app-rating">
                         <span class="stars">${stars}</span>
                         <span class="rating-text">${app.rating} (${app.downloads}+ downloads)</span>
                     </div>
-                    <div class="app-tags">
-                        <span class="tag category-${app.category}">${getCategoryName(app.category)}</span>
-                        <span class="tag">${priceText}</span>
-                        ${app.featured ? '<span class="tag" style="background: #ffc107; color: #000;">⭐ Destaque</span>' : ''}
-                    </div>
                 </div>
             </div>
-            <div class="app-description">
-                ${app.description.length > 120 ? app.description.substring(0, 120) + '...' : app.description}
+            <div class="app-card-body">
+                <div class="app-description">
+                    ${app.description.length > 120 ? app.description.substring(0, 120) + '...' : app.description}
+                </div>
+                <div class="app-tags">
+                    <span class="tag category-${app.category}">${getCategoryName(app.category)}</span>
+                    <span class="tag">${priceText}</span>
+                    ${app.featured ? '<span class="tag" style="background: #ffc107; color: #000;">⭐ Destaque</span>' : ''}
+                </div>
             </div>
             <div class="app-card-footer">
                 <div class="app-meta">
@@ -302,22 +343,46 @@ function getCategoryName(category) {
 function showAppDetails(appId) {
     const app = apps.find(a => a.id === appId);
     if (!app) return;
+    currentAppId = app.id;
     
     // Populate modal content
     document.getElementById('modalTitle').textContent = 'Detalhes do Aplicativo';
     document.getElementById('modalAppName').textContent = app.name;
     document.getElementById('modalDeveloper').textContent = app.developer;
+    document.getElementById('modalDeveloperInfo').textContent = app.developer;
     document.getElementById('modalDescription').textContent = app.description;
     document.getElementById('modalVersion').textContent = app.version;
     document.getElementById('modalSize').textContent = app.size;
     document.getElementById('modalCompatibility').textContent = app.compatibility;
     document.getElementById('modalCategory').textContent = getCategoryName(app.category);
-    document.getElementById('modalUpdated').textContent = formatDate(app.updatedAt);
+    document.getElementById('modalUpdated').textContent = app.updatedAt ? formatDate(app.updatedAt) : '';
     
-    // Rating
+    // Rating and downloads
     const stars = '★'.repeat(Math.floor(app.rating)) + '☆'.repeat(5 - Math.floor(app.rating));
     document.getElementById('modalRating').textContent = stars;
-    document.getElementById('modalRatingText').textContent = `${app.rating} (${app.downloads}+ downloads)`;
+    document.getElementById('modalRatingText').textContent = `${app.rating}`;
+    document.getElementById('modalDownloads').textContent = `${app.downloads}+ downloads`;
+    
+    // Price
+    const priceText = app.price === 0 ? 'Gratuito' : `R$ ${app.price.toFixed(2)}`;
+    document.getElementById('modalPrice').textContent = priceText;
+    
+    // Featured badge
+    const featuredElement = document.getElementById('modalFeatured');
+    if (app.featured) {
+        featuredElement.style.display = 'flex';
+    } else {
+        featuredElement.style.display = 'none';
+    }
+    
+    // Verified badge (for IBYT apps)
+    const badgeElement = document.getElementById('modalBadge');
+    if (app.developer.toLowerCase().includes('ibyt')) {
+        badgeElement.style.display = 'block';
+        badgeElement.title = 'Aplicativo verificado';
+    } else {
+        badgeElement.style.display = 'none';
+    }
     
     // Icon
     const modalIcon = document.getElementById('modalIcon');
@@ -337,7 +402,7 @@ function showAppDetails(appId) {
             </div>
         `).join('');
     } else {
-        screenshotsContainer.innerHTML = '<p style="color: #6c757d; text-align: center;">Nenhuma captura de tela disponível</p>';
+        screenshotsContainer.innerHTML = '<p style="color: #6c757d; text-align: center; padding: 2rem;">Nenhuma captura de tela disponível</p>';
     }
     
     // Download button
@@ -358,10 +423,36 @@ function closeModal() {
 }
 
 // Download App
-function downloadApp(appId) {
+async function downloadApp(appId) {
     const app = apps.find(a => a.id === appId);
     if (!app) return;
+    if (!app.apkUrl) {
+        showNotification('Arquivo de download não disponível para este app.', 'info');
+        return;
+    }
     
+    // Attempt to register download on server
+    try {
+        const res = await fetch('api/track-download.php', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ id: appId })
+        });
+        if (res.ok) {
+            const data = await res.json().catch(() => null);
+            if (data && data.success && typeof data.downloads === 'number') {
+                app.downloads = data.downloads;
+            } else {
+                app.downloads++;
+            }
+        } else {
+            app.downloads++;
+        }
+    } catch (_) {
+        // Fallback to client-side increment
+        app.downloads++;
+    }
+
     // Create download link
     const link = document.createElement('a');
     link.href = app.apkUrl;
@@ -374,9 +465,18 @@ function downloadApp(appId) {
     
     // Show download notification
     showNotification(`Download de ${app.name} iniciado!`, 'success');
-    
-    // Update download count (in real app, this would be sent to server)
-    app.downloads++;
+    // Update any visible UI with new download count
+    // If modal is open for this app, update the modal's download text too
+    try {
+        if (currentAppId === app.id) {
+            const modalRatingText = document.getElementById('modalRatingText');
+            if (modalRatingText) {
+                modalRatingText.textContent = `${app.rating} (${app.downloads}+ downloads)`;
+            }
+        }
+    } catch (_) {}
+    // Re-render cards to reflect updated counts
+    renderApps();
 }
 
 // Share App
@@ -395,15 +495,50 @@ function shareApp() {
         const text = `${app.name} - ${app.description}\n\nBaixe em: ${window.location.href}`;
         navigator.clipboard.writeText(text).then(() => {
             showNotification('Link copiado para a área de transferência!', 'success');
+        }).catch(() => {
+            showNotification('Não foi possível copiar o link', 'error');
         });
     }
 }
 
+// Open Image Modal for Screenshots
+function openImageModal(imageSrc) {
+    // Create image modal
+    const imageModal = document.createElement('div');
+    imageModal.className = 'image-modal';
+    imageModal.innerHTML = `
+        <div class="image-modal-content">
+            <button class="image-modal-close" onclick="this.parentElement.parentElement.remove()">
+                <span class="material-icons-round">close</span>
+            </button>
+            <img src="${imageSrc}" alt="Screenshot" onclick="event.stopPropagation()">
+        </div>
+    `;
+    
+    // Add click to close
+    imageModal.addEventListener('click', function(e) {
+        if (e.target === this) {
+            this.remove();
+        }
+    });
+    
+    // Add to body
+    document.body.appendChild(imageModal);
+    
+    // Prevent body scroll
+    document.body.style.overflow = 'hidden';
+    
+    // Remove modal when it's closed
+    const originalRemove = imageModal.remove;
+    imageModal.remove = function() {
+        document.body.style.overflow = 'auto';
+        originalRemove.call(this);
+    };
+}
+
 // Get Current App ID from Modal
 function getCurrentAppId() {
-    // This would be stored when opening the modal
-    // For now, return the first app ID
-    return apps.length > 0 ? apps[0].id : null;
+    return currentAppId;
 }
 
 // Format Date
@@ -536,5 +671,48 @@ function openImageModal(imageSrc) {
     document.body.appendChild(imageModal);
 }
 
+// Render Featured Apps
+function renderFeaturedApps() {
+    const featuredGrid = document.getElementById('featuredGrid');
+    if (!featuredGrid) return;
+    
+    // Filter featured apps
+    const featuredApps = apps.filter(app => app.featured && app.status === 'active');
+    
+    if (featuredApps.length === 0) {
+        featuredGrid.innerHTML = '<p style="text-align: center; color: #6c757d; padding: 2rem;">Nenhum aplicativo em destaque disponível no momento.</p>';
+        return;
+    }
+    
+    // Limit to 3 featured apps
+    const displayApps = featuredApps.slice(0, 3);
+    
+    featuredGrid.innerHTML = displayApps.map(app => {
+        const stars = '★'.repeat(Math.floor(app.rating)) + '☆'.repeat(5 - Math.floor(app.rating));
+        
+        return `
+            <div class="featured-app" onclick="showAppDetails(${app.id})">
+                <div class="app-icon">
+                    ${app.icon ? `<img src="${app.icon}" alt="${app.name}">` : `<span class="material-icons-round">apps</span>`}
+                </div>
+                <div class="app-info">
+                    <h3>${app.name}</h3>
+                    <p>${app.description.length > 80 ? app.description.substring(0, 80) + '...' : app.description}</p>
+                    <div class="app-rating">
+                        <span class="stars">${stars}</span>
+                        <span class="rating-text">${app.rating} (${app.downloads}+ downloads)</span>
+                    </div>
+                </div>
+                <button class="download-btn" onclick="event.stopPropagation(); downloadApp(${app.id})">
+                    <span class="material-icons-round">download</span>
+                    Baixar
+                </button>
+            </div>
+        `;
+    }).join('');
+}
+
 // Global function for featured apps
 window.showAppDetails = showAppDetails;
+// Ensure download function is available for inline handlers
+window.downloadApp = downloadApp;

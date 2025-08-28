@@ -2,6 +2,73 @@
    IBYT Store Admin Styles
    =================================== */
 
+/* Admin Header Actions */
+.header-actions {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.admin-user-info {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: rgba(0, 123, 255, 0.1);
+    border-radius: 20px;
+    color: #007bff;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.admin-user-info .material-icons-round {
+    font-size: 1.1rem;
+}
+
+.logout-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: #dc3545;
+    color: white;
+    text-decoration: none;
+    border-radius: 6px;
+    font-weight: 500;
+    font-size: 0.9rem;
+    transition: all 0.3s ease;
+}
+
+.logout-btn:hover {
+    background: #c82333;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+    color: white;
+    text-decoration: none;
+}
+
+.logout-btn .material-icons-round {
+    font-size: 1rem;
+}
+
+/* Responsive Header Actions */
+@media (max-width: 768px) {
+    .admin-user-info {
+        display: none;
+    }
+    
+    .logout-text {
+        display: none;
+    }
+    
+    .logout-btn {
+        padding: 0.5rem;
+        border-radius: 50%;
+        min-width: 40px;
+        justify-content: center;
+    }
+}
+
 /* Admin Dashboard */
 .dashboard-section {
     padding: 120px 0 60px;

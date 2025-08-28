@@ -34,14 +34,14 @@ try {
     $stmt->execute();
     $apps = $stmt->fetchAll();
     
-    // Determine request scheme safely (fallback to http)
+    // Determine request scheme safely (fallback to http) without triggering notices
     $scheme = 'http';
-    if (!empty($_SERVER['REQUEST_SCHEME'])) {
-        $scheme = $_SERVER['REQUEST_SCHEME'];
-    } elseif (!empty($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') {
+    if ((isset($_SERVER['HTTPS']) && $_SERVER['HTTPS'] !== 'off') || (isset($_SERVER['SERVER_PORT']) && (int)$_SERVER['SERVER_PORT'] === 443)) {
         $scheme = 'https';
-    } elseif (!empty($_SERVER['HTTP_X_FORWARDED_PROTO'])) {
+    } elseif (isset($_SERVER['HTTP_X_FORWARDED_PROTO']) && $_SERVER['HTTP_X_FORWARDED_PROTO']) {
         $scheme = $_SERVER['HTTP_X_FORWARDED_PROTO'];
+    } elseif (isset($_SERVER['REQUEST_SCHEME']) && $_SERVER['REQUEST_SCHEME']) {
+        $scheme = $_SERVER['REQUEST_SCHEME'];
     }
 
     // Process screenshots and tags
@@ -62,17 +62,20 @@ try {
         
         // Ensure URLs are absolute
         if (!empty($app['icon']) && !filter_var($app['icon'], FILTER_VALIDATE_URL)) {
-            $app['icon'] = $scheme . '://' . $_SERVER['HTTP_HOST'] . '/' . ltrim($app['icon'], '/');
+            $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost';
+            $app['icon'] = $scheme . '://' . $host . '/' . ltrim($app['icon'], '/');
         }
         
         if (!empty($app['apk_url']) && !filter_var($app['apk_url'], FILTER_VALIDATE_URL)) {
-            $app['apk_url'] = $scheme . '://' . $_SERVER['HTTP_HOST'] . '/' . ltrim($app['apk_url'], '/');
+            $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost';
+            $app['apk_url'] = $scheme . '://' . $host . '/' . ltrim($app['apk_url'], '/');
         }
         
         // Process screenshot URLs
         foreach ($app['screenshots'] as &$screenshot) {
             if (!filter_var($screenshot, FILTER_VALIDATE_URL)) {
-                $screenshot = $scheme . '://' . $_SERVER['HTTP_HOST'] . '/' . ltrim($screenshot, '/');
+                $host = isset($_SERVER['HTTP_HOST']) ? $_SERVER['HTTP_HOST'] : 'localhost';
+                $screenshot = $scheme . '://' . $host . '/' . ltrim($screenshot, '/');
             }
         }
     }
