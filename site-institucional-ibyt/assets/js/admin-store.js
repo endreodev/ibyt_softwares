@@ -504,28 +504,13 @@ async function confirmDelete() {
         const response = await fetch('api/delete-app.php', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ _method: 'DELETE', id: appId }),
-            credentials: 'same-origin' // Include session cookies
+            body: JSON.stringify({ _method: 'DELETE', id: appId })
         });
         
-        // Check if it's an authentication error
-        if (response.status === 401) {
-            showAdminNotification('Sessão expirada. Redirecionando para login...', 'error');
-            setTimeout(() => {
-                window.location.href = 'login-admin.php';
-            }, 2000);
-            return;
-        }
-        
-        // Optional: read JSON for message
-        let data = null;
-        try { 
-            data = await response.json(); 
-        } catch (e) {
-            console.error('Error parsing JSON:', e);
-        }
-
-        if (response.ok && data && data.success) {
+        if (response.ok) {
+            // Optional: read JSON for message
+            let data = {};
+            try { data = await response.json(); } catch (_) {}
             // Remove from local data
             adminApps = adminApps.filter(a => a.id !== appId);
             filteredAdminApps = filteredAdminApps.filter(a => a.id !== appId);
@@ -535,8 +520,7 @@ async function confirmDelete() {
             closeDeleteModal();
             showAdminNotification(((data && data.message) || 'Aplicativo excluído com sucesso!'), 'success');
         } else {
-            const msg = (data && data.message) ? data.message : `Erro ao excluir aplicativo (Status: ${response.status})`;
-            throw new Error(msg);
+            throw new Error('Erro ao excluir aplicativo');
         }
     } catch (error) {
         console.error('Error deleting app:', error);
